@@ -10,21 +10,38 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import AdminLogin from './components/Auth/AdminLogin';
 import Admin from './pages/admin';
-import css from "./index.css"
+import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 function App() {
   return (
     <Router>
       <Layout>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
-          <Route path="/admin-login" element={<AdminLogin />} />
-          <Route path="/admin-dashboard" element={<Admin />} />
           <Route path="/map" element={<Map />} />
           <Route path="/about" element={<About />} />
-          <Route path="/profile" element={<Profile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          
+          {/* Protected Routes */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-dashboard"
+            element={
+              <ProtectedRoute adminRequired={true}>
+                <Admin />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Layout>
     </Router>

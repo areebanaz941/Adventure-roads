@@ -1,7 +1,6 @@
 // src/pages/admin.js
 import React from 'react';
 import AdminMap from '../components/Map/AdminMap';
-import { Link } from 'react-router-dom';
 import Navbar from '../components/Layout/Navbar';
 
 const Admin = () => {
@@ -19,4 +18,5 @@ const Admin = () => {
     </div>
   );
 };
+
 export default Admin;

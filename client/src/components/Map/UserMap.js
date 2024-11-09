@@ -18,6 +18,7 @@ const UserMap = () => {
   const [currentStyle, setCurrentStyle] = useState('satellite');
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
 
+  
   useEffect(() => {
     if (map.current) return;
 
@@ -121,7 +122,9 @@ const UserMap = () => {
                 )}
               </div>
             </div>
-
+            <div className="text-sm text-white">
+  Current style: {currentStyle}
+</div>
             {/* Map container */}
             <div 
               ref={mapContainer} 
