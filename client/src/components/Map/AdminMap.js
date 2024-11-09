@@ -1,4 +1,4 @@
-// src/components/admin/AdminDashboard.js
+// src/components/Map/AdminMap.js
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -19,7 +19,6 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (map.current) return;
-
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: MAP_STYLES.satellite,
@@ -78,7 +77,7 @@ const AdminDashboard = () => {
             <button className="hover:bg-blue-600 px-2 rounded">▼</button>
           </div>
           <div className="p-4">
-            <p className="text-gray-900">Select a Route/POI to see details..</p>
+            <p className="text-gray-900">Select a Route/POI to see details.</p>
           </div>
         </div>
 
@@ -106,36 +105,36 @@ const AdminDashboard = () => {
 
             {/* Map style selector */}
             <div className="relative">
-              <button 
-                onClick={() => setIsStyleMenuOpen(!isStyleMenuOpen)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm flex items-center"
-              >
-                Base Map ▼
-              </button>
-              {isStyleMenuOpen && (
-                <div className="absolute right-0 mt-1 bg-white rounded shadow-lg z-50">
-                  <button
-                    onClick={() => changeMapStyle('satellite')}
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                  >
-                    Satellite
-                  </button>
-                  <button
-                    onClick={() => changeMapStyle('streets')}
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                  >
-                    Streets
-                  </button>
-                  <button
-                    onClick={() => changeMapStyle('satelliteStreets')}
-                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                  >
-                    Satellite with Streets
-                  </button>
-                </div>
-              )}
+                <button 
+                  onClick={() => setIsStyleMenuOpen(!isStyleMenuOpen)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm flex items-center"
+                >
+                  Base Map ▼
+                </button>
+                {isStyleMenuOpen && (
+                  <div className="absolute right-0 mt-1 bg-white rounded shadow-lg z-50">
+                    <button
+                      onClick={() => changeMapStyle('satellite')}
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+                    >
+                      Satellite
+                    </button>
+                    <button
+                      onClick={() => changeMapStyle('streets')}
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+                    >
+                      Streets
+                    </button>
+                    <button
+                      onClick={() => changeMapStyle('satelliteStreets')}
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+                    >
+                      Satellite with Streets
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
           {/* Map container */}
           <div 
