@@ -4,7 +4,8 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import UsingTheMap from '../UsingTheMap';
 
-mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
+// In both UserMap.js and AdminMap.js, replace the token line with:
+mapboxgl.accessToken = 'pk.eyJ1IjoiY2FwcGVyY2FtcGJlbGwiLCJhIjoiY2x1aTQ5czcxMDBqaTJwazJvOWw4MTI4OCJ9.UpPJOCzBrCK8fIy21F9Nhg';
 
 const MAP_STYLES = {
   satellite: 'mapbox://styles/mapbox/satellite-v9',

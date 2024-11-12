@@ -6,85 +6,59 @@
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   }
   
-.text-shadow-lg {
+  .text-shadow-lg {
     text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
   }
 
-html {
+  html {
     scroll-behavior: smooth;
   }
   
   /* Hide scrollbar for Chrome, Safari and Opera */
-.hide-scrollbar::-webkit-scrollbar {
+  .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
 
   /* Hide scrollbar for IE, Edge and Firefox */
-.hide-scrollbar {
+  .hide-scrollbar {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
   }
 
-.mapboxgl-ctrl-group {
+  .mapboxgl-ctrl-group {
     background: transparent !important;
     border: none !important;
   }
   
-.mapboxgl-ctrl-group button {
+  .mapboxgl-ctrl-group button {
     background-color: rgba(255, 255, 255, 0.1) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     margin: 2px !important;
   }
   
-.mapboxgl-ctrl-group button:hover {
+  .mapboxgl-ctrl-group button:hover {
     background-color: rgba(255, 255, 255, 0.2) !important;
   }
   
-.mapboxgl-ctrl-scale {
+  .mapboxgl-ctrl-scale {
     background-color: rgba(0, 0, 0, 0.5) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     color: white !important;
   }
   
   /* Custom globe style */
-.mapboxgl-canvas {
+  .mapboxgl-canvas {
     outline: none !important;
   }
   
   /* Style the zoom controls */
-.mapboxgl-ctrl-zoom-in,
-.mapboxgl-ctrl-zoom-out,
-.mapboxgl-ctrl-compass {
+  .mapboxgl-ctrl-zoom-in,
+  .mapboxgl-ctrl-zoom-out,
+  .mapboxgl-ctrl-compass {
     color: white !important;
   }
   
   /* Add subtle glow to the map container */
-.mapboxgl-canvas-container {
+  .mapboxgl-canvas-container {
     filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.3));
   }
-.mapboxgl-canvas {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-.mapboxgl-ctrl-group {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  border: none !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-}
-
-.mapboxgl-ctrl-group button {
-  width: 30px !important;
-  height: 30px !important;
-}
-
-.mapboxgl-ctrl-scale {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  border-color: #666 !important;
-  color: #333 !important;
-}
-
-/* Add to your index.css or Navbar component styles */
-.navbar {
-  height: 4rem; /* Matches the height we subtracted from AdminMap */
-}
