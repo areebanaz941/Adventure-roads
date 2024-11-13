@@ -4,8 +4,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import UsingTheMap from '../UsingTheMap';
 
-// In both UserMap.js and AdminMap.js, replace the token line with:
-mapboxgl.accessToken = 'pk.eyJ1IjoiY2FwcGVyY2FtcGJlbGwiLCJhIjoiY2x1aTQ5czcxMDBqaTJwazJvOWw4MTI4OCJ9.UpPJOCzBrCK8fIy21F9Nhg';
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
 const MAP_STYLES = {
   satellite: 'mapbox://styles/mapbox/satellite-v9',
@@ -19,7 +18,6 @@ const UserMap = () => {
   const [currentStyle, setCurrentStyle] = useState('satellite');
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
 
-  
   useEffect(() => {
     if (map.current) return;
 
@@ -123,9 +121,7 @@ const UserMap = () => {
                 )}
               </div>
             </div>
-            <div className="text-sm text-white">
-  Current style: {currentStyle}
-</div>
+
             {/* Map container */}
             <div 
               ref={mapContainer} 

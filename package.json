@@ -14,9 +14,14 @@
   "license": "ISC",
   "dependencies": {
     "@headlessui/react": "^2.2.0",
+    "@mapbox/mapbox-gl-draw": "^1.4.3",
     "@heroicons/react": "^2.1.5",
     "@reduxjs/toolkit": "^2.3.0",
     "axios": "^1.7.7",
+    "chart.js": "^4.4.1",
+    "react-chartjs-2": "^5.2.0",
+    "react-confirm-alert": "^3.0.6",
+    "react-notifications": "^1.7.4",
     "mapbox-gl": "^3.7.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -24,7 +29,10 @@
     "react-router-dom": "^6.27.0",
     "react-scripts": "^5.0.1",
     "redux": "^5.0.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "@mapbox/togeojson": "^0.16.0",
+    "@turf/turf": "^6.5.0",
+    "xmldom": "^0.6.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.16",

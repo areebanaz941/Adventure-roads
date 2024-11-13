@@ -1,4 +1,3 @@
-// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
@@ -11,6 +10,15 @@ import Register from './components/Auth/Register';
 import AdminLogin from './components/Auth/AdminLogin';
 import Admin from './pages/admin';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
+import mapboxgl from 'mapbox-gl';
+
+// Access environment variable properly
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
+
+// Add error handling for missing token
+if (!process.env.REACT_APP_MAPBOX_TOKEN) {
+  console.error('Mapbox token is missing. Please check your environment variables.');
+}
 
 function App() {
   return (
