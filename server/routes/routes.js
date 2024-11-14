@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Route = require('../../models/Route');
+const Route = require('../models/Route');
 
 // URL validation helper function
 const isValidUrl = (string) => {
@@ -12,12 +12,13 @@ const isValidUrl = (string) => {
   }
 };
 
-router.post('/', async (req, res) => {
+router.post('/api/route', async (req, res) => {
   try {
     const { type, properties, geometry } = req.body;
 
     // Validate the basic structure
     if (!type || !properties || !geometry || !geometry.coordinates) {
+      console.error('Missing required fields in the request body:', req.body);
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
@@ -26,6 +27,7 @@ router.post('/', async (req, res) => {
 
     // Validate URL if provided
     if (properties.url && !isValidUrl(properties.url)) {
+      console.error('Invalid URL format in the request body:', req.body);
       return res.status(400).json({
         success: false,
         message: 'Invalid URL format'
@@ -71,6 +73,7 @@ router.post('/', async (req, res) => {
 
     // Save the route
     const savedRoute = await newRoute.save();
+    console.log('New route saved:', savedRoute);
 
     res.status(201).json({
       success: true,
@@ -88,7 +91,7 @@ router.post('/', async (req, res) => {
 });
 
 // GET route to fetch a route by URL
-router.get('/', async (req, res) => {
+router.get('/api/route', async (req, res) => {
   try {
     const { url } = req.query;
 

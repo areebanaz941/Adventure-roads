@@ -26,6 +26,7 @@ const AdminDashboard = () => {
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [hoveredRouteId, setHoveredRouteId] = useState(null);
   const [saveStatus, setSaveStatus] = useState(null);
+  
 
 
   // Helper Functions
@@ -520,31 +521,67 @@ const buttonFunctions = {
     }
 
     try {
-      const savedRoute = await routeService.saveRoute(selectedRoute);
-      
-      // Update routes list with saved route
-      setRoutes(prevRoutes => 
-        prevRoutes.map(route => 
-          route.id === selectedRoute.id ? { ...route, _id: savedRoute.data._id } : route
-        )
-      );
+      // Prepare route data with [longitude, latitude, elevation] for waypoints
+      const routeToSave = {
+        type: "Feature",
+        properties: {
+          name: selectedRoute.properties.name,
+          description: selectedRoute.properties.description || "No description",
+          fileName: selectedRoute.properties.fileName,
+          roadType: selectedRoute.properties.roadType || "Tar/Sealed Road",
+          difficulty: selectedRoute.properties.difficulty || "Unknown",
+          time: selectedRoute.properties.time,
+          stats: {
+            totalDistance: Number(selectedRoute.properties.stats.totalDistance),
+            maxElevation: Number(selectedRoute.properties.stats.maxElevation),
+            minElevation: Number(selectedRoute.properties.stats.minElevation),
+            elevationGain: Number(selectedRoute.properties.stats.elevationGain),
+            numberOfPoints: Number(selectedRoute.properties.stats.numberOfPoints)
+          }
+        },
+        geometry: {
+          type: "LineString",
+          coordinates: selectedRoute.geometry.coordinates.map(coord => [
+            Number(coord[0]), // longitude
+            Number(coord[1]), // latitude
+            coord[2] !== undefined ? Number(coord[2]) : 0 // elevation, default to 0 if missing
+          ])
+        },
+        waypoints: selectedRoute.geometry.coordinates.map(coord => ({
+          latitude: coord[1],   // lat
+          longitude: coord[0],  // lon
+          elevation: coord[2] !== undefined ? coord[2] : 0 // Elevation, default to 0
+        }))
+      };
 
-      // Show success message with route details
-      setSaveStatus({
-        type: 'success',
-        message: `Route "${savedRoute.data.properties.name}" saved successfully!`,
-        route: savedRoute.data
-      });
+      const response = await routeService.saveRoute(routeToSave);
+
+      if (response.success) {
+        setSaveStatus({
+          type: 'success',
+          message: `Route "${routeToSave.properties.name}" saved successfully!`,
+          route: response.data
+        });
+
+        // Update the routes list with the saved route
+        setRoutes(prevRoutes => 
+          prevRoutes.map(route => 
+            route.id === selectedRoute.id ? { ...route, _id: response.data._id } : route
+          )
+        );
+
+      } else {
+        throw new Error(response.message || 'Failed to save route');
+      }
 
     } catch (error) {
-      console.error('Error saving route:', error);
+      console.error('Save error:', error);
       setSaveStatus({
         type: 'error',
         message: error.message || 'Failed to save route'
       });
     }
-  }
-
+}
 };
 
 const handleClearNotification = () => {
@@ -595,20 +632,20 @@ const handleClearNotification = () => {
           <div className="bg-[#4B8BF4] text-white p-2 flex justify-between items-center">
             <div className="flex space-x-2">
             <button 
-    onClick={buttonFunctions.handleUploadGPX}
-    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm flex items-center"
-  >
-    ⬆️ Upload GPX
-  </button>
-  <button 
-    onClick={buttonFunctions.saveInDatabase}
-    disabled={!selectedRoute}
-    className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm flex items-center ${
-      !selectedRoute ? 'opacity-50 cursor-not-allowed' : ''
-    }`}
-  >
-    SAVE IN DATABASE
-  </button>
+              onClick={buttonFunctions.handleUploadGPX}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm flex items-center"
+            >
+              ⬆️ Upload GPX
+            </button>
+            <button 
+              onClick={buttonFunctions.saveInDatabase}
+              disabled={!selectedRoute}
+              className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm flex items-center ${
+              !selectedRoute ? 'opacity-50 cursor-not-allowed' : ''
+             }`}
+            >
+              SAVE IN DATABASE
+            </button>
               
               <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">
                 Split Selected Line to Chunks
