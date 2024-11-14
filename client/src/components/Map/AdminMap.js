@@ -3,6 +3,9 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import ElevationChart from '../ElevationChart';
 import LeftSidebar from '../LeftSidebar';
+import { routeService } from '../services/routeService';
+// Add to imports at the top
+import SaveNotification from '../SaveNotification';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -22,6 +25,7 @@ const AdminDashboard = () => {
   const [routes, setRoutes] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [hoveredRouteId, setHoveredRouteId] = useState(null);
+  const [saveStatus, setSaveStatus] = useState(null);
 
 
   // Helper Functions
@@ -504,7 +508,47 @@ const buttonFunctions = {
         alert(`Error processing file ${file.name}: ${error.message}`);
       }
     }
+  },
+
+  saveInDatabase: async () => {
+    if (!selectedRoute) {
+      setSaveStatus({
+        type: 'error',
+        message: 'Please select a route to save'
+      });
+      return;
+    }
+
+    try {
+      const savedRoute = await routeService.saveRoute(selectedRoute);
+      
+      // Update routes list with saved route
+      setRoutes(prevRoutes => 
+        prevRoutes.map(route => 
+          route.id === selectedRoute.id ? { ...route, _id: savedRoute.data._id } : route
+        )
+      );
+
+      // Show success message with route details
+      setSaveStatus({
+        type: 'success',
+        message: `Route "${savedRoute.data.properties.name}" saved successfully!`,
+        route: savedRoute.data
+      });
+
+    } catch (error) {
+      console.error('Error saving route:', error);
+      setSaveStatus({
+        type: 'error',
+        message: error.message || 'Failed to save route'
+      });
+    }
   }
+
+};
+
+const handleClearNotification = () => {
+  setSaveStatus(null);
 };
 
   return (
@@ -550,15 +594,22 @@ const buttonFunctions = {
           {/* Control Panel */}
           <div className="bg-[#4B8BF4] text-white p-2 flex justify-between items-center">
             <div className="flex space-x-2">
-              <button 
-                onClick={buttonFunctions.handleUploadGPX}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm flex items-center"
-              >
-                ⬆️ Upload GPX
-              </button>
-              <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">
-                SAVE IN DATABASE
-              </button>
+            <button 
+    onClick={buttonFunctions.handleUploadGPX}
+    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm flex items-center"
+  >
+    ⬆️ Upload GPX
+  </button>
+  <button 
+    onClick={buttonFunctions.saveInDatabase}
+    disabled={!selectedRoute}
+    className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm flex items-center ${
+      !selectedRoute ? 'opacity-50 cursor-not-allowed' : ''
+    }`}
+  >
+    SAVE IN DATABASE
+  </button>
+              
               <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">
                 Split Selected Line to Chunks
               </button>
@@ -610,7 +661,14 @@ const buttonFunctions = {
           />
         </div>
       </div>
-    </div>
+    <div className="min-h-screen flex flex-col relative">
+    <SaveNotification 
+      status={saveStatus}
+      onClose={handleClearNotification}
+    />
+  </div>
+  </div>
+    
   );
 };
 

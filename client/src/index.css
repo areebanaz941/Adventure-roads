@@ -80,3 +80,16 @@ html {
   flex: 1;
   min-height: 0;
 }
+
+@keyframes shrink {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.notification-progress {
+  animation: shrink 5s linear forwards;
+}
