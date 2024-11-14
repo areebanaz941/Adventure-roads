@@ -1,51 +1,74 @@
-// src/components/Map/RouteInfo.js
+// src/components/RouteInfo.js
 import React from 'react';
+import PropTypes from 'prop-types';
+// Optional: Import Chart.js for elevation graph if needed
+// import { Line } from 'react-chartjs-2';
 
-const RouteInfo = ({ route, className }) => {
-  if (!route) return null;
+const RouteInfo = ({ route }) => {
+  if (!route) {
+    return <p>No route selected</p>;
+  }
+
+  const { name, roadType, notes, stats } = route.properties;
+  const { totalDistance, avgElevation, maxElevation, minElevation } = stats || {};
+
+  // Elevation data for chart (if needed)
+  // const elevationData = {
+  //   labels: route.geometry.coordinates.map((_, index) => index),
+  //   datasets: [
+  //     {
+  //       label: 'Elevation',
+  //       data: route.geometry.coordinates.map(coord => coord[2] || 0), // Assuming 3rd value in coordinate is elevation
+  //       fill: false,
+  //       backgroundColor: 'blue',
+  //       borderColor: 'blue',
+  //     },
+  //   ],
+  // };
 
   return (
-    <div className={`bg-white rounded-lg shadow-lg p-4 ${className}`}>
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">{route.name}</h2>
-      
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Distance</h3>
-          <p className="mt-1 text-lg text-gray-900">{route.distance} km</p>
-        </div>
+    <div>
+      <h4 className="text-lg font-bold">{name}</h4>
+      <p><strong>Type:</strong> {roadType}</p>
+      <p><strong>Notes:</strong> {notes || 'No additional information'}</p>
+      <p><strong>Total Distance:</strong> {totalDistance ? `${totalDistance} km` : 'N/A'}</p>
 
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Surface Type</h3>
-          <p className="mt-1 text-lg text-gray-900">{route.surfaceType}</p>
-        </div>
+      {stats && (
+        <>
+          <h5 className="font-semibold mt-2">Elevation Stats</h5>
+          <p><strong>Average Elevation:</strong> {avgElevation ? `${avgElevation} m` : 'N/A'}</p>
+          <p><strong>Maximum Elevation:</strong> {maxElevation ? `${maxElevation} m` : 'N/A'}</p>
+          <p><strong>Minimum Elevation:</strong> {minElevation ? `${minElevation} m` : 'N/A'}</p>
+        </>
+      )}
 
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">Elevation Gain</h3>
-          <p className="mt-1 text-lg text-gray-900">{route.elevationGain} m</p>
-        </div>
-
-        {/* Comments Section */}
-        <div className="mt-6">
-          <h3 className="text-sm font-medium text-gray-500">Recent Comments</h3>
-          <div className="mt-2 space-y-3 max-h-40 overflow-y-auto">
-            {route.comments?.map((comment, index) => (
-              <div key={index} className="border-b border-gray-200 pb-2">
-                <p className="text-sm text-gray-600">{comment.text}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {comment.author} - {new Date(comment.date).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Download Button */}
-        <button className="w-full mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
-          Download GPX
-        </button>
-      </div>
+      {/* Elevation chart (optional) */}
+      {/* 
+      <div className="mt-4">
+        <Line data={elevationData} options={{ maintainAspectRatio: false }} />
+      </div> 
+      */}
     </div>
   );
+};
+
+RouteInfo.propTypes = {
+  route: PropTypes.shape({
+    properties: PropTypes.shape({
+      name: PropTypes.string,
+      roadType: PropTypes.string,
+      notes: PropTypes.string,
+      stats: PropTypes.shape({
+        totalDistance: PropTypes.number,
+        avgElevation: PropTypes.number,
+        maxElevation: PropTypes.number,
+        minElevation: PropTypes.number,
+      }),
+    }),
+    geometry: PropTypes.shape({
+      coordinates: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)),
+    }),
+  }),
 };
 
 export default RouteInfo;

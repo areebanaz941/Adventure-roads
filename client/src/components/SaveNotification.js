@@ -1,4 +1,3 @@
-// components/SaveNotification.js
 import React, { useEffect } from 'react';
 
 const SaveNotification = ({ status, onClose }) => {
@@ -36,10 +35,7 @@ const SaveNotification = ({ status, onClose }) => {
               {status.type === 'success' ? 'Success!' : 'Error'}
             </span>
           </div>
-          <button 
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -52,24 +48,24 @@ const SaveNotification = ({ status, onClose }) => {
         </div>
 
         {/* Route Details - Only show on success */}
-        {status.type === 'success' && status.route && (
+        {status.type === 'success' && status.route?.properties && (
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Name:</span>
-                <span className="font-medium text-gray-900">{status.route.properties.name}</span>
+                <span className="font-medium text-gray-900">{status.route.properties.name || 'N/A'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Distance:</span>
-                <span className="font-medium text-gray-900">{status.route.properties.stats.totalDistance} km</span>
+                <span className="font-medium text-gray-900">{status.route.properties.stats?.totalDistance || 0} km</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Elevation Gain:</span>
-                <span className="font-medium text-gray-900">{status.route.properties.stats.elevationGain} m</span>
+                <span className="font-medium text-gray-900">{status.route.properties.stats?.elevationGain || 0} m</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Points:</span>
-                <span className="font-medium text-gray-900">{status.route.properties.stats.numberOfPoints}</span>
+                <span className="font-medium text-gray-900">{status.route.properties.stats?.numberOfPoints || 0}</span>
               </div>
             </div>
           </div>

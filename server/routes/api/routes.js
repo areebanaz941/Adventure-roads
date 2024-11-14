@@ -1,123 +1,59 @@
+// routes/api/routeRoutes.js
 const express = require('express');
 const router = express.Router();
 const Route = require('../../models/Route');
 
-// URL validation helper function
-const isValidUrl = (string) => {
-  try {
-    new URL(string);
-    return true;
-  } catch (_) {
-    return false;
-  }
-};
-
 router.post('/', async (req, res) => {
   try {
-    const { type, properties, geometry } = req.body;
-
-    // Validate the basic structure
-    if (!type || !properties || !geometry || !geometry.coordinates) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
-    }
-
-    // Validate URL if provided
-    if (properties.url && !isValidUrl(properties.url)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid URL format'
-      });
-    }
-
-    // Ensure all coordinate values are numbers
-    const cleanedCoordinates = geometry.coordinates.map(coord => {
-      if (coord.length !== 3) {
-        throw new Error('Each coordinate must have longitude, latitude, and elevation');
-      }
-      return [
-        Number(coord[0]), // longitude
-        Number(coord[1]), // latitude
-        Number(coord[2])  // elevation
-      ];
-    });
-
-    // Create the route document
     const newRoute = new Route({
-      type,
-      properties: {
-        name: properties.name,
-        description: properties.description || 'No description',
-        fileName: properties.fileName,
-        url: properties.url || '', // Add URL field with empty string as default
-        roadType: properties.roadType,
-        difficulty: properties.difficulty,
-        time: new Date(properties.time),
-        stats: {
-          totalDistance: Number(properties.stats.totalDistance),
-          maxElevation: Number(properties.stats.maxElevation),
-          minElevation: Number(properties.stats.minElevation),
-          elevationGain: Number(properties.stats.elevationGain),
-          numberOfPoints: Number(properties.stats.numberOfPoints)
-        }
-      },
-      geometry: {
-        type: 'LineString',
-        coordinates: cleanedCoordinates
+      name: req.body.name || req.body.properties?.name,
+      description: req.body.description || req.body.properties?.description,
+      fileName: req.body.fileName || req.body.properties?.fileName,
+      roadType: req.body.roadType || req.body.properties?.roadType,
+      path: req.body.geometry?.coordinates || req.body.path,
+      stats: {
+        totalDistance: Number(req.body.stats?.totalDistance || req.body.properties?.stats?.totalDistance),
+        maxElevation: Number(req.body.stats?.maxElevation || req.body.properties?.stats?.maxElevation),
+        minElevation: Number(req.body.stats?.minElevation || req.body.properties?.stats?.minElevation),
+        elevationGain: Number(req.body.stats?.elevationGain || req.body.properties?.stats?.elevationGain),
+        numberOfPoints: Number(req.body.stats?.numberOfPoints || req.body.properties?.stats?.numberOfPoints)
       }
     });
 
-    // Save the route
     const savedRoute = await newRoute.save();
-
-    res.status(201).json({
-      success: true,
-      data: savedRoute,
-      message: 'Route saved successfully'
+    res.status(201).json({ 
+      success: true, 
+      data: {
+        ...savedRoute.toObject(),
+        properties: {
+          name: savedRoute.name,
+          description: savedRoute.description,
+          roadType: savedRoute.roadType,
+          stats: savedRoute.stats
+        }
+      } 
     });
-
   } catch (error) {
-    console.error('Error saving route:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to save route'
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// GET route to fetch a route by URL
-router.get('/', async (req, res) => {
+router.get('/api/routes', async (req, res) => {
   try {
-    const { url } = req.query;
-
-    if (!url) {
-      return res.status(400).json({
-        success: false,
-        message: 'URL parameter is required'
-      });
-    }
-
-    const route = await Route.findOne({ 'properties.url': url });
-
-    if (!route) {
-      return res.status(404).json({
-        success: false,
-        message: 'Route not found'
-      });
-    }
-
+    console.log('Fetching routes from database...');
+    const routes = await Route.find({}).sort('-createdAt');
+    console.log(`Found ${routes.length} routes in database`);
+    
     res.json({
       success: true,
-      data: route
+      data: routes,
+      count: routes.length
     });
-
   } catch (error) {
-    console.error('Error fetching route by URL:', error);
+    console.error('Error fetching routes:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to fetch route'
+      message: error.message
     });
   }
 });
