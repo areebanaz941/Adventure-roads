@@ -26,6 +26,7 @@ const routeSchema = new mongoose.Schema({
 });
 
 const Route = mongoose.model('Route', routeSchema);
+app.use('/api', require('./routes/temp'));
 
 // Middleware
 app.use(morgan('dev'));

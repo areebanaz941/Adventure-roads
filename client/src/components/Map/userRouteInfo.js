@@ -1,91 +1,86 @@
-// src/components/RouteInfo.js
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import ElevationChart from '../UserElevationCharts';
 
+const ROAD_TYPE_COLORS = {
+  'Tar/Sealed Road': '#808080',    // Changed from 'Sealed Road'
+  'Gravel/Dirt Road': '#f59e0b',   // Fixed hex code
+  'Track/Trail': '#8b4513',
+  'Sand': '#fde047',
+  'Not Yet Defined': '#d9f99d'
+};
+
 const RouteInfo = ({ route }) => {
   const [comment, setComment] = useState('');
 
-  if (!route) {
-    return <p className="text-gray-500">Select a route to see details</p>;
-  }
+  if (!route) return <p className="text-gray-500">Select a route to see details</p>;
 
   const { name, roadType, notes, stats } = route.properties;
   const { totalDistance, maxElevation, minElevation, elevationGain } = stats || {};
 
-  const handleCommentChange = (e) => {
-    setComment(e.target.value);
-  };
-
-  const handleCommentSubmit = (e) => {
-    e.preventDefault();
-    // Handle comment submission logic here
-    console.log('Comment submitted:', comment);
-    setComment('');
-  };
-
   return (
-    <div className="bg-white shadow rounded-lg p-4">
-      <h3 className="text-xl font-bold mb-4">Route Info</h3>
-      <div className="space-y-4">
+    <div className="max-h-[calc(100vh-48px)] overflow-y-auto">
+      <div className="space-y-4 p-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Name:</label>
-          <p className="text-lg font-bold">{name}</p>
+          <h3 className="text-lg font-bold mb-2">{name}</h3>
+          <div style={{ backgroundColor: ROAD_TYPE_COLORS[roadType] }} className="w-full h-1 rounded mb-2" />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Road Type:</label>
-            <p className="text-lg">{roadType}</p>
+            <label className="font-medium text-gray-700">Road Type:</label>
+            <p>{roadType}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Notes:</label>
-            <p className="text-lg">{notes || 'No additional information'}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Distance:</label>
-            <p className="text-lg">{totalDistance} km</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Elevation Gain:</label>
-            <p className="text-lg">{elevationGain} m</p>
+            <label className="font-medium text-gray-700">Notes:</label>
+            <p className="break-words">{notes || 'No additional information'}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Max Elevation:</label>
-            <p className="text-lg">{maxElevation} m</p>
+            <label className="font-medium text-gray-700">Distance:</label>
+            <p>{totalDistance} km</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Min Elevation:</label>
-            <p className="text-lg">{minElevation} m</p>
+            <label className="font-medium text-gray-700">Elevation Gain:</label>
+            <p>{elevationGain} m</p>
           </div>
         </div>
 
-        <div>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <label className="font-medium text-gray-700">Max Elevation:</label>
+            <p>{maxElevation} m</p>
+          </div>
+          <div>
+            <label className="font-medium text-gray-700">Min Elevation:</label>
+            <p>{minElevation} m</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-3 shadow-sm">
           <h4 className="font-bold mb-2">Elevation Profile</h4>
-          <div className="bg-white rounded">
-            <ElevationChart data={route.geometry.coordinates} />
-          </div>
+          <ElevationChart data={route.geometry.coordinates} />
         </div>
 
-        <div>
+        <div className="bg-white rounded-lg p-3 shadow-sm">
           <h4 className="font-bold mb-2">Comments</h4>
-          <form onSubmit={handleCommentSubmit}>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            console.log('Comment submitted:', comment);
+            setComment('');
+          }}>
             <textarea
-              className="w-full p-2 border rounded-md text-sm mb-2"
+              className="w-full p-2 border rounded text-sm mb-2 resize-none"
               rows="3"
               placeholder="Add your comments here..."
               value={comment}
-              onChange={handleCommentChange}
+              onChange={(e) => setComment(e.target.value)}
             />
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
             >
               Submit Comment
             </button>
@@ -99,8 +94,8 @@ const RouteInfo = ({ route }) => {
 RouteInfo.propTypes = {
   route: PropTypes.shape({
     properties: PropTypes.shape({
-      name: PropTypes.string,
-      roadType: PropTypes.string,
+      name: PropTypes.string.isRequired,
+      roadType: PropTypes.string.isRequired,
       notes: PropTypes.string,
       stats: PropTypes.shape({
         totalDistance: PropTypes.number,
@@ -108,10 +103,10 @@ RouteInfo.propTypes = {
         minElevation: PropTypes.number,
         elevationGain: PropTypes.number,
       }),
-    }),
+    }).isRequired,
     geometry: PropTypes.shape({
       coordinates: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)),
-    }),
+    }).isRequired,
   }),
 };
 

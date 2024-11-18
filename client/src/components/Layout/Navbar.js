@@ -36,6 +36,13 @@ const Navbar = () => {
           >
             ADMIN 
           </Link>
+
+          <Link 
+            to="/comments" 
+            className="text-[#436485] hover:text-[#2c4359] font-medium transition-colors"
+          >
+            COMMENTS
+          </Link>
         </div>
       </div>
     </nav>

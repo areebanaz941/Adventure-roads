@@ -1,3 +1,4 @@
+//src/components/Map/AdminMap.js
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -6,7 +7,7 @@ import LeftSidebar from '../LeftSidebar';
 import { routeService } from '../services/routeService';
 // Add to imports at the top
 import SaveNotification from '../SaveNotification';
-
+import SplitRouteDialog from '../SplitRouteDialog';
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
 const MAP_STYLES = {
@@ -26,7 +27,8 @@ const AdminDashboard = () => {
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [hoveredRouteId, setHoveredRouteId] = useState(null);
   const [saveStatus, setSaveStatus] = useState(null);
-  
+  const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false);
+
 
 
   // Helper Functions
@@ -43,51 +45,75 @@ const AdminDashboard = () => {
   };
 
   
-  const addRouteToMap = (geoJSON, index) => {
+  const addRouteToMap = (route, index) => {
+    if (!map.current || !route?.geometry?.coordinates) return;
+  
     const sourceId = `route-${index}`;
     const layerId = `${sourceId}-layer`;
-
-    if (map.current.getSource(sourceId)) {
-      map.current.removeLayer(layerId);
-      map.current.removeSource(sourceId);
-    }
-
+    const outlineLayerId = `${sourceId}-outline`;
+  
+    // Remove existing layers
+    if (map.current.getLayer(outlineLayerId)) map.current.removeLayer(outlineLayerId);
+    if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
+    if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
+  
+    // Add source
     map.current.addSource(sourceId, {
       type: 'geojson',
-      data: geoJSON
+      data: route
     });
-
+  
+    // Determine if route is from database or uploaded
+    const isUploadedRoute = !route._id;
+    
+    // Add outline layer
+    map.current.addLayer({
+      id: outlineLayerId,
+      type: 'line',
+      source: sourceId,
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+        visibility: 'visible'
+      },
+      paint: {
+        'line-color': '#000000',
+        'line-width': selectedRoute?.id === route.id ? 6 : 5,
+        'line-opacity': 0.5
+      }
+    });
+  
+    // Add main route layer
     map.current.addLayer({
       id: layerId,
       type: 'line',
       source: sourceId,
       layout: {
         'line-join': 'round',
-        'line-cap': 'round'
+        'line-cap': 'round',
+        visibility: 'visible'
       },
       paint: {
-        'line-color': [
-          'case',
-          ['==', ['get', 'hover'], true], '#ff0000',
-          ['==', ['get', 'selected'], true], '#ff8800',
-          '#ff0000'
-        ],
-        'line-width': [
-          'case',
-          ['==', ['get', 'hover'], true], 5,
-          ['==', ['get', 'selected'], true], 4,
-          3
-        ],
-        'line-opacity': [
-          'case',
-          ['==', ['get', 'hover'], true], 1,
-          ['==', ['get', 'selected'], true], 0.9,
-          0.8
-        ]
+        'line-color': isUploadedRoute ? '#ff0000' : ROUTE_COLORS[route.properties.roadType] || ROUTE_COLORS['Not Yet Defined'],
+        'line-width': selectedRoute?.id === route.id ? 4 : 3,
+        'line-opacity': 1
       }
     });
+  
+    // Click handlers
+    map.current.on('click', layerId, () => setSelectedRoute(route));
+    map.current.on('click', outlineLayerId, () => setSelectedRoute(route));
   };
 
+// Add the ROUTE_COLORS constant at the top of your file with your other constants
+const ROUTE_COLORS = {
+  'Tar/Sealed Road': '#808080',  // Gray for sealed roads
+  'Gravel Road': '#FFA500',      // Orange for gravel/dirt roads
+  'Dirt Track': '#8B4513',       // Brown for tracks/trails
+  'Off Road': '#FFD700',         // Yellow for off-road
+  'Mixed Road': '#90EE90',       // Light green for mixed
+  'Not Yet Defined': '#FF69B4'   // Pink for undefined
+};
 
   // Add this right after your other helper functions and before the useEffect
 const addCustomControls = (map) => {
@@ -273,7 +299,54 @@ const addCustomControls = (map) => {
       }),
       'bottom-right'
     );
+      // Add this line to fetch routes when map initializes
+      fetchRoutes();
+
   }, []);
+
+  // Add these new functions to handle route fetching
+const fetchRoutes = async () => {
+  try {
+    const response = await routeService.getAllRoutes();
+
+    console.log("Full Response:", response);
+    if (!response.success) {
+      throw new Error(response.message);
+    }
+
+    if (!Array.isArray(response.data.data)) {
+      console.error("Unexpected data format:", response.data);
+      throw new Error("Expected an array of routes in the 'data.data' property.");
+    }
+
+    const routesData = response.data.data.map(transformRouteData);
+    setRoutes(routesData);
+
+    // Add fetched routes to map
+    routesData.forEach((route, index) => addRouteToMap(route, index));
+  } catch (error) {
+    console.error('Error fetching routes:', error);
+  }
+};
+
+const transformRouteData = (routeData) => ({
+  ...routeData,
+  properties: {
+    ...routeData.properties,
+    roadType: routeData.properties.roadType || 'Not Yet Defined',
+    notes: routeData.properties.notes || '',
+    stats: routeData.properties.stats || {
+      totalDistance: 0,
+      maxElevation: 0,
+      minElevation: 0,
+      elevationGain: 0,
+      numberOfPoints: 0
+    }
+  },
+  id: routeData._id // Ensure unique identifier
+});
+
+
 
   // Route State Update Effect
 // First, remove the setting of selectedRoute from the mousemove handler
@@ -284,7 +357,7 @@ useEffect(() => {
     const features = map.current.queryRenderedFeatures(e.point, {
       layers: routes.map((_, index) => `route-${index}-layer`)
     });
-
+  
     if (features.length > 0) {
       map.current.getCanvas().style.cursor = 'pointer';
       const hoveredRoute = routes.find((route, index) => 
@@ -292,37 +365,44 @@ useEffect(() => {
       );
       
       if (hoveredRoute) {
-        // Only update visual styles on hover, don't set selectedRoute
-        routes.forEach((_, index) => {
+        routes.forEach((route, index) => {
           const layerId = `route-${index}-layer`;
+          const outlineLayerId = `route-${index}-outline`;
+          const isUploadedRoute = !route._id;
+  
           if (map.current.getLayer(layerId)) {
             if (layerId === features[0].layer.id) {
-              map.current.setPaintProperty(layerId, 'line-color', '#ff3b30');
+              map.current.setPaintProperty(outlineLayerId, 'line-width', 7);
               map.current.setPaintProperty(layerId, 'line-width', 5);
               map.current.setPaintProperty(layerId, 'line-opacity', 1);
             } else {
-              map.current.setPaintProperty(layerId, 'line-color', '#ff0000');
+              const routeColor = isUploadedRoute ? '#ff0000' : ROUTE_COLORS[route.properties.roadType] || ROUTE_COLORS['Not Yet Defined'];
+              map.current.setPaintProperty(outlineLayerId, 'line-width', 5);
               map.current.setPaintProperty(layerId, 'line-width', 3);
               map.current.setPaintProperty(layerId, 'line-opacity', 0.6);
+              map.current.setPaintProperty(layerId, 'line-color', routeColor);
             }
           }
         });
       }
     } else {
       map.current.getCanvas().style.cursor = '';
-      // Reset styles for non-selected routes
       routes.forEach((route, index) => {
         const layerId = `route-${index}-layer`;
+        const outlineLayerId = `route-${index}-outline`;
+        const isUploadedRoute = !route._id;
+  
         if (map.current.getLayer(layerId)) {
-          // Keep selected route highlighted
           if (route === selectedRoute) {
-            map.current.setPaintProperty(layerId, 'line-color', '#ff3b30');
+            map.current.setPaintProperty(outlineLayerId, 'line-width', 6);
             map.current.setPaintProperty(layerId, 'line-width', 4);
             map.current.setPaintProperty(layerId, 'line-opacity', 0.9);
           } else {
-            map.current.setPaintProperty(layerId, 'line-color', '#ff0000');
+            const routeColor = isUploadedRoute ? '#ff0000' : ROUTE_COLORS[route.properties.roadType] || ROUTE_COLORS['Not Yet Defined'];
+            map.current.setPaintProperty(outlineLayerId, 'line-width', 5);
             map.current.setPaintProperty(layerId, 'line-width', 3);
             map.current.setPaintProperty(layerId, 'line-opacity', 0.8);
+            map.current.setPaintProperty(layerId, 'line-color', routeColor);
           }
         }
       });
@@ -581,7 +661,94 @@ const buttonFunctions = {
         message: error.message || 'Failed to save route'
       });
     }
-}
+  },
+  
+  splitRouteIntoChunks: (route, chunkDistanceKm = 5) => {
+    if (!route?.geometry?.coordinates || route.geometry.coordinates.length < 2) {
+      throw new Error('Invalid route data');
+    }
+
+    const chunks = [];
+    let currentChunk = [route.geometry.coordinates[0]];
+    let chunkDistance = 0;
+
+    for (let i = 1; i < route.geometry.coordinates.length; i++) {
+      const prevPoint = route.geometry.coordinates[i - 1];
+      const currentPoint = route.geometry.coordinates[i];
+      
+      const segmentDistance = calculateDistance(
+        prevPoint[1], prevPoint[0],
+        currentPoint[1], currentPoint[0]
+      );
+      
+      chunkDistance += segmentDistance;
+      currentChunk.push(currentPoint);
+
+      if (chunkDistance >= chunkDistanceKm || i === route.geometry.coordinates.length - 1) {
+        chunks.push({
+          type: "Feature",
+          properties: {
+            ...route.properties,
+            name: `${route.properties.name} - Chunk ${chunks.length + 1}`,
+            chunkIndex: chunks.length,
+            stats: {
+              ...route.properties.stats,
+              totalDistance: chunkDistance.toFixed(2),
+            }
+          },
+          geometry: {
+            type: "LineString",
+            coordinates: currentChunk
+          }
+        });
+        
+        currentChunk = [currentPoint];
+        chunkDistance = 0;
+      }
+    }
+
+    return chunks;
+  },
+
+  splitSelectedLine: function(chunkSize = 5) {
+    if (!selectedRoute) {
+      alert('Please select a route to split');
+      return;
+    }
+  
+    try {
+      const chunks = this.splitRouteIntoChunks(selectedRoute, chunkSize);
+      
+      // Remove original route
+      const sourceId = `route-${routes.findIndex(r => r.id === selectedRoute.id)}`;
+      if (map.current.getSource(sourceId)) {
+        const layerId = `${sourceId}-layer`;
+        const outlineLayerId = `${sourceId}-outline`;
+        if (map.current.getLayer(outlineLayerId)) map.current.removeLayer(outlineLayerId);
+        if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
+        map.current.removeSource(sourceId);
+      }
+
+      // Add chunks as new routes
+      setRoutes(prevRoutes => {
+        const filteredRoutes = prevRoutes.filter(r => r.id !== selectedRoute.id);
+        const newRoutes = [...filteredRoutes, ...chunks];
+        
+        // Add new chunks to map
+        chunks.forEach((chunk, index) => {
+          addRouteToMap(chunk, filteredRoutes.length + index);
+        });
+        
+        return newRoutes;
+      });
+
+      setSelectedRoute(chunks[0]);
+    } catch (error) {
+      console.error('Error splitting route:', error);
+      alert('Error splitting route: ' + error.message);
+    }
+  }
+
 };
 
 const handleClearNotification = () => {
@@ -647,9 +814,15 @@ const handleClearNotification = () => {
               SAVE IN DATABASE
             </button>
               
-              <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">
-                Split Selected Line to Chunks
-              </button>
+            <button 
+  onClick={() => setIsSplitDialogOpen(true)}
+  disabled={!selectedRoute}
+  className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm ${
+    !selectedRoute ? 'opacity-50 cursor-not-allowed' : ''
+  }`}
+>
+  Split Selected Line to Chunks
+</button>
               <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">
                 Split Selected Line at Clicked Point
               </button>
@@ -689,6 +862,7 @@ const handleClearNotification = () => {
                 </div>
               )}
             </div>
+
           </div>
 
           {/* Map container */}
@@ -702,6 +876,14 @@ const handleClearNotification = () => {
     <SaveNotification 
       status={saveStatus}
       onClose={handleClearNotification}
+    />
+    <SplitRouteDialog
+      isOpen={isSplitDialogOpen}
+      onClose={() => setIsSplitDialogOpen(false)}
+      onConfirm={(chunkSize) => {
+        buttonFunctions.splitSelectedLine(chunkSize);
+        setIsSplitDialogOpen(false);
+      }}
     />
   </div>
   </div>

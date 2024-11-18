@@ -1,6 +1,4 @@
-
 import React from 'react';
-import PropTypes from 'prop-types';
 import {
   LineChart,
   Line,
@@ -8,110 +6,70 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  Legend
+  ResponsiveContainer
 } from 'recharts';
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-gray-800 text-white p-2 rounded shadow-lg text-sm">
-        <p>Point: {label}</p>
-        <p className="flex items-center">
-          <span className="inline-block w-2 h-2 bg-green-500 mr-2"></span>
-          Elevation: {payload[0].value}m
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
+const ElevationChart = ({ data }) => {
+  if (!data?.length) return null;
 
-const ElevationChart = ({ route }) => {
-  if (!route) {
-    return <p className="text-gray-500">Select a route to see details</p>;
-  }
+  // Calculate total distance from coordinates
+  const totalDistance = data.length > 1 ? 
+    data.reduce((acc, coord, i) => {
+      if (i === 0) return 0;
+      const prevCoord = data[i - 1];
+      const dist = Math.sqrt(
+        Math.pow(coord[0] - prevCoord[0], 2) + 
+        Math.pow(coord[1] - prevCoord[1], 2)
+      ) * 111; // Rough conversion to kilometers
+      return acc + dist;
+    }, 0) : 0;
 
-  const { name, roadType, notes, stats } = route.properties;
-  const { totalDistance, maxElevation, minElevation } = stats || {};
-
-  const elevationData = route.geometry.coordinates.map((coord, index) => ({
-    point: index,
-    elevation: Math.round(coord[2] || 0)
-  }));
+  // Sample the data to reduce points and smooth the chart
+  const sampleRate = Math.max(1, Math.floor(data.length / 100));
+  const elevationData = data
+    .filter((_, i) => i % sampleRate === 0)
+    .map((coord, i) => ({
+      distance: ((i * sampleRate) / data.length * totalDistance).toFixed(1),
+      elevation: Math.round(coord[2] || 0)
+    }));
 
   return (
-    <div className="space-y-4">
-      {/* ... */}
-
-      {stats && (
-        <div className="bg-white shadow rounded-lg p-4">
-          {/* ... */}
-
-          <div className="mt-6">
-            <h6 className="text-lg font-bold mb-2">Elevation Profile</h6>
-            <div className="h-64 w-full bg-white">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={elevationData}
-                  margin={{ top: 10, right: 30, left: 30, bottom: 20 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#e0e0e0"
-                    horizontal={true}
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="point"
-                    stroke="#666"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={(value) => value * 15} // Adjust scale as needed
-                  />
-                  <YAxis
-                    domain={[0, 'auto']}
-                    stroke="#666"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 11 }}
-                    width={35}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend
-                    verticalAlign="top"
-                    height={30}
-                    content={({ payload }) => (
-                      <div className="flex justify-center items-center text-sm">
-                        <span className="inline-block w-3 h-3 bg-green-500 mr-2"></span>
-                        Elevation
-                      </div>
-                    )}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="elevation"
-                    stroke="#4CAF50"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{
-                      r: 4,
-                      stroke: '#4CAF50',
-                      strokeWidth: 2,
-                      fill: 'white'
-                    }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="h-40 w-full">
+      <ResponsiveContainer>
+        <LineChart data={elevationData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+          <XAxis
+            dataKey="distance"
+            tick={{ fontSize: 10 }}
+            tickFormatter={v => `${v}km`}
+          />
+          <YAxis
+            tick={{ fontSize: 10 }}
+            tickFormatter={v => `${v}m`}
+            domain={['dataMin', 'dataMax']}
+          />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              return (
+                <div className="bg-white p-2 border shadow-lg text-xs">
+                  <p>Distance: {payload[0].payload.distance}km</p>
+                  <p>Elevation: {payload[0].value}m</p>
+                </div>
+              );
+            }}
+          />
+          <Line
+            type="monotone"
+            dataKey="elevation"
+            stroke="#4B8BF4"
+            dot={false}
+            strokeWidth={1.5}
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 };
-
-// ...
 
 export default ElevationChart;

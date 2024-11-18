@@ -4,13 +4,13 @@ import Layout from './components/Layout/Layout';
 import Home from './pages/Home';
 import Map from './pages/Map';
 import About from './pages/About';
-import Profile from './pages/Profile';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import AdminLogin from './components/Auth/AdminLogin';
 import Admin from './pages/admin';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import mapboxgl from 'mapbox-gl';
+import ContactPage from './pages/contact';
 
 // Access environment variable properly
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
@@ -29,16 +29,10 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/map" element={<Map />} />
           <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/contact" element={<ContactPage />} />
+          
           
           {/* Protected Routes */}
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
           <Route
             path="/admin-dashboard"
             element={
