@@ -11,7 +11,7 @@ const ROAD_TYPE_COLORS = {
 };
 
 const RouteInfo = ({ route }) => {
-  
+  const [comment, setComment] = useState('');
 
   if (!route) return <p className="text-gray-500">Select a route to see details</p>;
 
@@ -64,7 +64,28 @@ const RouteInfo = ({ route }) => {
           <ElevationChart data={route.geometry.coordinates} />
         </div>
 
-        
+        <div className="bg-white rounded-lg p-3 shadow-sm">
+          <h4 className="font-bold mb-2">Comments</h4>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            console.log('Comment submitted:', comment);
+            setComment('');
+          }}>
+            <textarea
+              className="w-full p-2 border rounded text-sm mb-2 resize-none"
+              rows="3"
+              placeholder="Add your comments here..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <button
+              type="submit"
+              className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+            >
+              Submit Comment
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

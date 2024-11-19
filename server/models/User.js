@@ -1,16 +1,31 @@
-// models/User.js
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
     username: {
         type: String,
         required: true,
         unique: true
     },
-    email: {
+    firstName: {
         type: String,
-        required: true,
-        unique: true
+        required: true
+    },
+    lastName: {
+        type: String,
+        required: true
+    },
+    location: {
+        type: String,
+        required: true
+    },
+    vehicleInfo: {
+        type: String,
+        required: true
     },
     password: {
         type: String,
@@ -20,11 +35,6 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['user', 'admin'],
         default: 'user'
-    },
-    surveyResponses: {
-        ridingExperience: String,
-        bikeModel: String,
-        preferredRouteTypes: [String]
     }
 }, {
     timestamps: true

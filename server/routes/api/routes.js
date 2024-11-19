@@ -2,7 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const Route = require('../../models/Route');
-
+const User = require('../../models/User');
+const bcrypt = require('bcryptjs');
 router.post('/', async (req, res) => {
   try {
     const newRoute = new Route({
@@ -57,5 +58,9 @@ router.get('/api/routes', async (req, res) => {
     });
   }
 });
+
+
+
+
 
 module.exports = router;

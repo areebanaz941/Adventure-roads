@@ -993,10 +993,9 @@ const handleClearNotification = () => {
         setIsSplitDialogOpen(false);
       }}
     />
-
     <div>
 
-    
+
       View User's Comments
     </div>
   </div>

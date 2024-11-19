@@ -11,7 +11,8 @@ import Admin from './pages/admin';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import mapboxgl from 'mapbox-gl';
 import ContactPage from './pages/contact';
-
+import LoginPage from '../src/components/Forms/LoginPage';
+import RegisteredUserHome from '../src/pages/RegisteredUserHome';
 // Access environment variable properly
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -30,7 +31,8 @@ function App() {
           <Route path="/map" element={<Map />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/contact" element={<ContactPage />} />
-          
+          <Route path="/user-login" element={<LoginPage />} />
+          <Route path="/home" element={<RegisteredUserHome />} />
           
           {/* Protected Routes */}
           <Route

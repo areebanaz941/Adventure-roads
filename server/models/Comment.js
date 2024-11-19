@@ -1,25 +1,23 @@
-const commentSchema = new Schema({
+// models/Comment.js
+const mongoose = require('mongoose');
+
+const commentSchema = new mongoose.Schema({
+  routeName: {
+    type: String,
+    required: true
+  },
+  username: {
+    type: String,
+    required: true
+  },
   content: {
     type: String,
     required: true
   },
-  user: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  route: {
-    type: Schema.Types.ObjectId,
-    ref: 'Route',
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending'
+  timestamp: {
+    type: Date,
+    default: Date.now
   }
-}, {
-  timestamps: true
 });
 
-module.exports = model('Comment', commentSchema);
+module.exports = mongoose.model('Comment', commentSchema);
