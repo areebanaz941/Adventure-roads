@@ -26,17 +26,6 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Define the helper functions first
-  const getFieldDisplayName = (field) => {
-    const displayNames = {
-      name: 'Route Name',
-      roadType: 'Road Type',
-      difficulty: 'Difficulty Level',
-      description: 'Description'
-    };
-    return displayNames[field] || field;
-  };
-
   const roadTypes = [
     'Tar/Sealed Road',
     'Gravel Road',
@@ -54,37 +43,28 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
     'Extreme'
   ];
 
-  // Effects
   useEffect(() => {
     setChanges({});
   }, [selectedRoute]);
 
-  useEffect(() => {
-    console.log('Current changes:', changes);
-    console.log('Changes count:', Object.keys(changes).length);
-  }, [changes]);
-
-  // Event Handlers
   const handleInputChange = (field, value) => {
     if (selectedRoute) {
       const currentValue = selectedRoute.properties[field] || '';
       const newValue = value || '';
 
-      const updatedRoute = {
+      setSelectedRoute({
         ...selectedRoute,
         properties: {
           ...selectedRoute.properties,
           [field]: newValue
         }
-      };
-      setSelectedRoute(updatedRoute);
+      });
 
       if (currentValue !== newValue) {
-        console.log('Change detected:', { field, from: currentValue, to: newValue });
         setChanges(prev => ({
           ...prev,
           [field]: {
-            fieldName: getFieldDisplayName(field),
+            fieldName: field,
             from: currentValue || '(empty)',
             to: newValue || '(empty)'
           }
@@ -108,9 +88,7 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
     setIsSuccess(true);
     setChanges({});
     setShowConfirmation(false);
-    setTimeout(() => {
-      setIsSuccess(false);
-    }, 3000);
+    setTimeout(() => setIsSuccess(false), 3000);
   };
 
   const handleCancel = () => {
@@ -122,200 +100,136 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
     setShowConfirmation(false);
   };
 
-  const renderApplyButton = () => (
-    <div className="bg-white rounded-lg p-4 shadow-sm">
-      <button 
-        className={`w-full py-2 rounded-md text-white font-medium transition-colors ${
-          Object.keys(changes).length > 0
-            ? 'bg-[#2196F3] hover:bg-[#1976D2]'
-            : 'bg-gray-300 cursor-not-allowed'
-        }`}
-        onClick={handleApply}
-        disabled={Object.keys(changes).length === 0}
-      >
-        APPLY {Object.keys(changes).length > 0 ? `(${Object.keys(changes).length} changes)` : ''}
-      </button>
-    </div>
-  );
-
   return (
     <div className="w-96 bg-[#d2d2d3] border-r border-gray-200 flex flex-col h-[calc(100vh-64px)]">
-      {/* Fixed Header */}
       <div className="bg-[#4B8BF4] text-white p-2 flex justify-between items-center shrink-0">
         <h3 className="font-bold">Route Info</h3>
       </div>
 
-      {/* Scrollable Content */}
       <div className="p-4 overflow-y-auto flex-1">
-        {routes.length > 0 ? (
-          <>
-            {/* Routes List */}
-            <div className="space-y-2 mb-4">
-              {routes.map((route, index) => (
-                <div 
-                  key={index}
-                  className={`p-3 rounded shadow-sm cursor-pointer transition-all ${
-                    selectedRoute === route ? 'bg-blue-500 text-white' : 'bg-white hover:bg-blue-50'
-                  }`}
-                  onClick={() => setSelectedRoute(route)}
-                >
-                  <h4 className="font-bold text-sm">
-                    {route.properties?.name || `Route ${index + 1}`}
-                  </h4>
-                  <p className="text-xs opacity-75">
-                    {route.properties?.stats.totalDistance} km • {route.properties?.stats.numberOfPoints} points
-                  </p>
-                </div>
-              ))}
+        {selectedRoute ? (
+          <div className="space-y-4">
+            {/* Route Name */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name:
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                value={selectedRoute.properties.name || ''}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+              />
             </div>
 
-            {/* Selected Route Details */}
-            {selectedRoute && (
-              <div className="space-y-4">
-                {/* Your existing route details components remain the same... */}
-                {/* Route Name */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
+            {/* Road Type and Difficulty */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name:
+                    Road Type:
                   </label>
-                  <input
-                    type="text"
+                  <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    value={selectedRoute.properties.name || ''}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                  />
-                </div>
-
-                {/* Road Type and Difficulty */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Road Type:
-                      </label>
-                      <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        value={selectedRoute.properties.roadType || 'Tar/Sealed Road'}
-                        onChange={(e) => handleInputChange('roadType', e.target.value)}
-                      >
-                        {roadTypes.map(type => (
-                          <option key={type} value={type}>{type}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Difficulty:
-                      </label>
-                      <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        value={selectedRoute.properties.difficulty || 'Unknown'}
-                        onChange={(e) => handleInputChange('difficulty', e.target.value)}
-                      >
-                        {difficultyLevels.map(level => (
-                          <option key={level} value={level}>{level}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Basic Stats Grid */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-3 rounded">
-                      <div className="text-sm text-blue-600">Distance</div>
-                      <div className="text-lg font-bold">{selectedRoute.properties.stats.totalDistance} km</div>
-                    </div>
-                    <div className="bg-blue-50 p-3 rounded">
-                      <div className="text-sm text-blue-600">Elevation Gain</div>
-                      <div className="text-lg font-bold">{selectedRoute.properties.stats.elevationGain} m</div>
-                    </div>
-                    <div className="bg-blue-50 p-3 rounded">
-                      <div className="text-sm text-blue-600">Max Elevation</div>
-                      <div className="text-lg font-bold">{selectedRoute.properties.stats.maxElevation} m</div>
-                    </div>
-                    <div className="bg-blue-50 p-3 rounded">
-                      <div className="text-sm text-blue-600">Min Elevation</div>
-                      <div className="text-lg font-bold">{selectedRoute.properties.stats.minElevation} m</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Route Details */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <h4 className="font-bold mb-2">Details</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between py-1 border-b">
-                      <span className="text-gray-600">Total Points</span>
-                      <span className="font-medium">{selectedRoute.properties.stats.numberOfPoints}</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b">
-                      <span className="text-gray-600">Created Date</span>
-                      <span className="font-medium">
-                        {new Date(selectedRoute.properties.time).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b">
-                      <span className="text-gray-600">Avg Elevation</span>
-                      <span className="font-medium">
-                        {(
-                          (parseFloat(selectedRoute.properties.stats.maxElevation) +
-                            parseFloat(selectedRoute.properties.stats.minElevation)) /
-                          2
-                        ).toFixed(0)} m
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <h4 className="font-bold mb-2">Description</h4>
-                  <textarea 
-                    className="w-full p-2 border rounded-md text-sm"
-                    rows="3"
-                    placeholder="Add comments here..."
-                    value={selectedRoute.properties.description || ''}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                  />
-                </div>
-
-                {/* Elevation Profile */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <h4 className="font-bold mb-3">Elevation Profile</h4>
-                  <div className="bg-white rounded">
-                    <ElevationChart data={selectedRoute.geometry.coordinates} />
-                  </div>
-                </div>
-
-                {/* Apply Button */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <button 
-                    className={`w-full py-2 rounded-md text-white font-medium transition-colors ${
-                      Object.keys(changes).length > 0
-                        ? 'bg-[#2196F3] hover:bg-[#1976D2]'
-                        : 'bg-gray-300 cursor-not-allowed'
-                    }`}
-                    onClick={handleApply}
-                    disabled={Object.keys(changes).length === 0}
+                    value={selectedRoute.properties.roadType || 'Tar/Sealed Road'}
+                    onChange={(e) => handleInputChange('roadType', e.target.value)}
                   >
-                    APPLY
-                  </button>
+                    {roadTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Difficulty:
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    value={selectedRoute.properties.difficulty || 'Unknown'}
+                    onChange={(e) => handleInputChange('difficulty', e.target.value)}
+                  >
+                    {difficultyLevels.map(level => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            )}
-          </>
+            </div>
+
+            {/* Basic Stats Grid */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-3 rounded">
+                  <div className="text-sm text-blue-600">Distance</div>
+                  <div className="text-lg font-bold">{selectedRoute.properties.stats.totalDistance} km</div>
+                </div>
+                <div className="bg-blue-50 p-3 rounded">
+                  <div className="text-sm text-blue-600">Elevation Gain</div>
+                  <div className="text-lg font-bold">{selectedRoute.properties.stats.elevationGain} m</div>
+                </div>
+                <div className="bg-blue-50 p-3 rounded">
+                  <div className="text-sm text-blue-600">Max Elevation</div>
+                  <div className="text-lg font-bold">{selectedRoute.properties.stats.maxElevation} m</div>
+                </div>
+                <div className="bg-blue-50 p-3 rounded">
+                  <div className="text-sm text-blue-600">Min Elevation</div>
+                  <div className="text-lg font-bold">{selectedRoute.properties.stats.minElevation} m</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Route Details */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <h4 className="font-bold mb-2">Details</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between py-1 border-b">
+                  <span className="text-gray-600">Total Points</span>
+                  <span className="font-medium">{selectedRoute.properties.stats.numberOfPoints}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b">
+                  <span className="text-gray-600">Created Date</span>
+                  <span className="font-medium">
+                    {new Date(selectedRoute.properties.time).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1 border-b">
+                  <span className="text-gray-600">Avg Elevation</span>
+                  <span className="font-medium">
+                    {((parseFloat(selectedRoute.properties.stats.maxElevation) +
+                      parseFloat(selectedRoute.properties.stats.minElevation)) / 2).toFixed(0)} m
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <h4 className="font-bold mb-2">Description</h4>
+              <textarea 
+                className="w-full p-2 border rounded-md text-sm"
+                rows="3"
+                placeholder="Add comments here..."
+                value={selectedRoute.properties.description || ''}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+              />
+            </div>
+
+            {/* Elevation Profile */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <h4 className="font-bold mb-3">Elevation Profile</h4>
+              <div className="bg-white rounded">
+                <ElevationChart data={selectedRoute.geometry.coordinates} />
+              </div>
+            </div>
+
+        
+          </div>
         ) : (
-          <p className="text-gray-900">Upload a GPX file to see route details.</p>
+          <p className="text-gray-900">Select a route to view details.</p>
         )}
       </div>
 
-      {/* Confirmation Modal */}
-      <Modal
-        isOpen={showConfirmation}
-        onClose={() => setShowConfirmation(false)}
-      >
+      <Modal isOpen={showConfirmation} onClose={() => setShowConfirmation(false)}>
         <div className="space-y-4">
           <div className="border-b pb-3">
             <h2 className="text-xl font-bold">Route Changes Summary</h2>
@@ -358,7 +272,6 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
         </div>
       </Modal>
 
-      {/* Success Notification */}
       <Notification
         message={`Changes to ${selectedRoute?.properties?.name} saved successfully!`}
         isVisible={isSuccess}

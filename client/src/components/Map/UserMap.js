@@ -148,7 +148,7 @@ const handleDeselectAll = () => {
 
    map.current = new mapboxgl.Map({
      container: mapContainer.current,
-     style: MAP_STYLES.satellite,
+     style: MAP_STYLES.streets,
      center: [133.7751, -25.2744],
      zoom: 4,
      projection: 'globe',

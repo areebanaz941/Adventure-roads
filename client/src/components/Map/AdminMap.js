@@ -254,7 +254,7 @@ const addCustomControls = (map) => {
     if (map.current) return;
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: MAP_STYLES.satellite,
+      style: MAP_STYLES.streets,
       center: [133.7751, -25.2744],
       zoom: 4,
       projection: 'globe',
@@ -747,8 +747,111 @@ const buttonFunctions = {
       console.error('Error splitting route:', error);
       alert('Error splitting route: ' + error.message);
     }
+  },
+  // Add to buttonFunctions object
+splitRouteAtPoint: function() {
+  if (!selectedRoute) {
+    alert('Please select a route to split');
+    return;
   }
 
+  // Toggle cursor to indicate splitting mode
+  map.current.getCanvas().style.cursor = 'crosshair';
+
+  const handleClick = (e) => {
+    const features = map.current.queryRenderedFeatures(e.point, {
+      layers: routes.map((_, index) => `route-${index}-layer`)
+    });
+
+    if (features.length > 0) {
+      const clickedPoint = map.current.unproject(e.point);
+      const coordinates = selectedRoute.geometry.coordinates;
+      
+      // Find closest point
+      let minDistance = Infinity;
+      let splitIndex = 0;
+      
+      coordinates.forEach((coord, index) => {
+        const distance = calculateDistance(
+          clickedPoint.lat,
+          clickedPoint.lng,
+          coord[1],
+          coord[0]
+        );
+        
+        if (distance < minDistance) {
+          minDistance = distance;
+          splitIndex = index;
+        }
+      });
+
+      // Split into two routes
+      const route1 = {
+        ...selectedRoute,
+        id: `split-1-${Date.now()}`,
+        properties: {
+          ...selectedRoute.properties,
+          name: `${selectedRoute.properties.name} - Part 1`
+        },
+        geometry: {
+          type: "LineString",
+          coordinates: coordinates.slice(0, splitIndex + 1)
+        }
+      };
+
+      const route2 = {
+        ...selectedRoute,
+        id: `split-2-${Date.now()}`,
+        properties: {
+          ...selectedRoute.properties,
+          name: `${selectedRoute.properties.name} - Part 2`
+        },
+        geometry: {
+          type: "LineString",
+          coordinates: coordinates.slice(splitIndex)
+        }
+      };
+
+      // Update routes
+      setRoutes(prevRoutes => {
+        const newRoutes = prevRoutes.filter(r => r.id !== selectedRoute.id);
+        return [...newRoutes, route1, route2];
+      });
+
+      // Remove old route layers and sources
+      const routeIndex = routes.findIndex(r => r.id === selectedRoute.id);
+      const sourceId = `route-${routeIndex}`;
+      
+      if (map.current.getSource(sourceId)) {
+        const layerId = `${sourceId}-layer`;
+        const outlineLayerId = `${sourceId}-outline`;
+        if (map.current.getLayer(outlineLayerId)) map.current.removeLayer(outlineLayerId);
+        if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
+        map.current.removeSource(sourceId);
+      }
+
+      // Add new routes to map
+      addRouteToMap(route1, routes.length);
+      addRouteToMap(route2, routes.length + 1);
+
+      setSelectedRoute(route1);
+    }
+  };
+
+  // Add click handler
+  map.current.on('click', handleClick);
+
+  // Add ESC key handler to exit split mode
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      map.current.off('click', handleClick);
+      map.current.getCanvas().style.cursor = '';
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+
+  document.addEventListener('keydown', escHandler);
+}
 };
 
 const handleClearNotification = () => {
@@ -815,20 +918,24 @@ const handleClearNotification = () => {
             </button>
               
             <button 
-  onClick={() => setIsSplitDialogOpen(true)}
-  disabled={!selectedRoute}
-  className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm ${
-    !selectedRoute ? 'opacity-50 cursor-not-allowed' : ''
-  }`}
->
-  Split Selected Line to Chunks
-</button>
-              <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">
-                Split Selected Line at Clicked Point
-              </button>
-              <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">
-                Calculate Route Between
-              </button>
+              onClick={() => setIsSplitDialogOpen(true)}
+              disabled={!selectedRoute}
+              className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm ${
+                !selectedRoute ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+               Split Selected Line to Chunks
+            </button>
+
+            <button 
+             onClick={buttonFunctions.splitRouteAtPoint}
+             disabled={!selectedRoute}
+             className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm ${
+             !selectedRoute ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            >
+             Split Selected Line at Clicked Point
+            </button>
             </div>
 
             {/* Map style selector */}
@@ -871,6 +978,7 @@ const handleClearNotification = () => {
             className="h-[calc(100vh-8rem)] flex-1"
           />
         </div>
+        
       </div>
     <div className="min-h-screen flex flex-col relative">
     <SaveNotification 
@@ -885,7 +993,14 @@ const handleClearNotification = () => {
         setIsSplitDialogOpen(false);
       }}
     />
+
+    <div>
+
+    
+      View User's Comments
+    </div>
   </div>
+  
   </div>
     
   );
