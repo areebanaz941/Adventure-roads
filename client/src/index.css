@@ -184,3 +184,35 @@ html {
     background: rgba(255, 255, 255, 0.2);
     margin: 4px 0;
   }
+
+
+/* Add to your CSS file */
+.slick-prev,
+.slick-next {
+  z-index: 10;
+}
+
+.slick-prev {
+  left: -25px;
+}
+
+.slick-next {
+  right: -25px;
+}
+
+.slick-prev:before,
+.slick-next:before {
+  color: #4B5563;
+}
+
+.slick-dots {
+  bottom: -25px;
+}
+
+.slick-dots li button:before {
+  color: #4B5563;
+}
+
+.slick-slide > div {
+  margin: 0 8px;
+}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import ElevationChart from '../UserElevationCharts';
-
+import CommentSection from '../Comments/NonComment';
 const ROAD_TYPE_COLORS = {
   'Tar/Sealed Road': '#808080',    // Changed from 'Sealed Road'
   'Gravel/Dirt Road': '#f59e0b',   // Fixed hex code
@@ -62,6 +62,10 @@ const RouteInfo = ({ route }) => {
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <h4 className="font-bold mb-2">Elevation Profile</h4>
           <ElevationChart data={route.geometry.coordinates} />
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow-sm">
+          <h4 className="font-bold mb-2">Comments</h4>
+          <CommentSection routeName={route.properties.name} />
         </div>
 
         

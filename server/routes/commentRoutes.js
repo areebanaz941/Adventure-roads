@@ -30,4 +30,26 @@ router.get('/:routeName', async (req, res) => {
   }
 });
 
+// In your commentRoutes.js
+
+// Get all comments (admin route)
+router.get('/', async (req, res) => {
+  try {
+    const comments = await Comment.find().sort('-timestamp');
+    res.json({ success: true, data: comments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Delete comment (admin route)
+router.delete('/:id', async (req, res) => {
+  try {
+    await Comment.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Comment deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

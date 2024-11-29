@@ -22,15 +22,15 @@ const routeSchema = new mongoose.Schema({
   }
 }, { 
   collection: 'routes',
-  timestamps: true // Adds createdAt and updatedAt fields
+  timestamps: true
 });
 
 const Route = mongoose.model('Route', routeSchema);
-app.use('/api', require('./routes/temp'));
-// Add near the top with other requires
+
+// Import routes
 const userRoutes = require('./routes/userRoutes');
-
-
+const commentRoutes = require('./routes/commentRoutes');
+const tempRoutes = require('./routes/temp');
 
 // Middleware
 app.use(morgan('dev'));
@@ -40,14 +40,18 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-// Add with other middleware
-app.use('/api/user', userRoutes);
+
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   console.log('Request body:', JSON.stringify(req.body, null, 2));
   next();
 });
+
+// Route Middlewares - Register all routes BEFORE error handlers
+app.use('/api', tempRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/comments', commentRoutes);
 
 // Routes
 app.post('/api/routes', async (req, res) => {
@@ -138,6 +142,27 @@ app.get('/api/routes', async (req, res) => {
   }
 });
 
+// Error Handlers - AFTER all routes
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Server Error:', err);
+  res.status(500).json({
+    success: false,
+    message: process.env.NODE_ENV === 'development' 
+      ? err.message 
+      : 'Internal server error',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
@@ -145,7 +170,6 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
 .then(() => {
   console.log('✅ Connected to MongoDB Atlas');
-  // Start server after successful database connection
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
@@ -163,25 +187,6 @@ mongoose.connection.on('error', err => {
 
 mongoose.connection.on('disconnected', () => {
   console.log('MongoDB disconnected');
-});
-
-// Error Handling
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  });
-});
-
-app.use((err, req, res, next) => {
-  console.error('Server Error:', err);
-  res.status(500).json({
-    success: false,
-    message: process.env.NODE_ENV === 'development' 
-      ? err.message 
-      : 'Internal server error',
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
 });
 
 // Handle unhandled promise rejections

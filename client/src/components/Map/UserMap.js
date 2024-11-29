@@ -440,6 +440,7 @@ document.head.appendChild(style);
      <div className="bg-white">
        <UsingTheMap />
      </div>
+     
    </div>
  );
 };

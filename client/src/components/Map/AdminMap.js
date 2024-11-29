@@ -8,6 +8,7 @@ import { routeService } from '../services/routeService';
 // Add to imports at the top
 import SaveNotification from '../SaveNotification';
 import SplitRouteDialog from '../SplitRouteDialog';
+import AdminCommentsView from '../Map/AdminCommentsView';
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
 const MAP_STYLES = {
@@ -994,9 +995,7 @@ const handleClearNotification = () => {
       }}
     />
     <div>
-
-
-      View User's Comments
+      <AdminCommentsView />
     </div>
   </div>
   
