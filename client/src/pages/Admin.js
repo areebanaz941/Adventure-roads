@@ -13,6 +13,7 @@ const Admin = () => {
 
       {/* Main Content */}
       <div className="flex-1">
+        <admin-login />
         <AdminMap />
       </div>
     </div>

@@ -10,7 +10,7 @@ router.get('/test', (req, res) => {
 });
 
 // Admin login route
-router.post('/login', async (req, res) => {
+router.post('/admin-login', async (req, res) => {
     console.log('Login attempt received:', req.body); // Debug log
     try {
         const { email, password } = req.body;

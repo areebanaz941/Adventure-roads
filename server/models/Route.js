@@ -1,29 +1,19 @@
-const routeSchema = new Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  description: String,
-  surfaceType: String,
-  coordinates: {
-    type: {
-      type: String,
-      enum: ['LineString'],
-      required: true
-    },
-    coordinates: [[Number]]
-  },
-  gpxFile: String,
-  distance: Number,
-  metadata: {
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    lastModified: Date
-  }
-}, {
-  timestamps: true
-});
+// models/Route.js
+const mongoose = require('mongoose');
 
-module.exports = model('Route', routeSchema);
+const routeSchema = new mongoose.Schema({
+  name: String,
+  description: String,
+  fileName: String,
+  roadType: String,
+  path: [[Number]],
+  stats: {
+    totalDistance: Number,
+    maxElevation: Number,
+    minElevation: Number,
+    elevationGain: Number,
+    numberOfPoints: Number
+  }
+}, { collection: 'routes' });
+
+module.exports = mongoose.model('Route', routeSchema);

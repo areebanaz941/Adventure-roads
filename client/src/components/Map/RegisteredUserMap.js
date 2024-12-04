@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import UsingTheMap from '../UsingTheMap';
 import routeService from '../services/routeService';
-import RouteInfo from '../Map/userRouteInfo';
+import RouteInfo from '../Map/RegisteredRouteinfo';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -440,7 +440,6 @@ document.head.appendChild(style);
      <div className="bg-white">
        <UsingTheMap />
      </div>
-     
    </div>
  );
 };

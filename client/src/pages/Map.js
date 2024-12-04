@@ -1,7 +1,7 @@
 // src/pages/Map.js
 import React, { useState } from 'react';
 import UserMap from '../components/Map/UserMap';
-import RouteInfo from '../components/Map/RouteInfo';
+import RouteInfo from '../components/Map/userRouteInfo';
 
 const Map = () => {
   const [selectedRoute, setSelectedRoute] = useState(null);

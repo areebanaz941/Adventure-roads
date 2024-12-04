@@ -10,35 +10,22 @@ const AdminLogin = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    try {
-      const response = await fetch('http://localhost:5000/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-      
-      if (response.ok && data.token) {
-        localStorage.setItem('token', data.token);
+    // Check hardcoded credentials
+    if (formData.email === 'kali.be20igis@gmail.com' && formData.password === '12345') {
+      // Simulate a brief loading state
+      setTimeout(() => {
         localStorage.setItem('isAdmin', 'true');
         navigate('/admin-dashboard');
-      } else {
-        setError(data.message || 'Invalid credentials');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('An error occurred during login');
-    } finally {
-      setLoading(false);
+      }, 500);
+    } else {
+      setError('Invalid credentials');
     }
+    setLoading(false);
   };
 
   return (
