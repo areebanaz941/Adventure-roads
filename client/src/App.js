@@ -7,7 +7,7 @@ import About from './pages/About';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import AdminLogin from './components/Auth/AdminLogin';
-import Admin from './pages/admin';
+import Admin from './pages/Admin';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import mapboxgl from 'mapbox-gl';
 import ContactPage from './pages/contact';
