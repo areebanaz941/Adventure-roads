@@ -34,7 +34,7 @@ const Navbar = () => {
             to="/user-login" 
             className="text-[#436485] hover:text-[#2c4359] font-medium transition-colors"
           >
-            REGISTERATION
+            SIGNIN
           </Link>
 
           <Link 
