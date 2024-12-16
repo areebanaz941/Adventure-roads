@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from '../Forms//axiosconfig';  // Adjust the path based on your file structure
-
+import axios from '../Forms/axiosconfig';
 
 const CommentSection = ({ routeName }) => {
   const [comments, setComments] = useState([]);
@@ -8,6 +7,37 @@ const CommentSection = ({ routeName }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const user = JSON.parse(localStorage.getItem('user'));
+
+  // Sort function for comments
+  const sortCommentsByDate = (comments) => {
+    return [...comments].sort((a, b) => {
+      // Create Date objects from timestamps, defaulting to 0 if invalid
+      const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+      return dateB - dateA; // Most recent first
+    });
+  };
+
+  // Format date with fallback
+  const formatDate = (timestamp) => {
+    if (!timestamp) return '';
+    
+    try {
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return '';
+      
+      return new Intl.DateTimeFormat('en-AU', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }).format(date);
+    } catch (error) {
+      return '';
+    }
+  };
 
   useEffect(() => {
     if (routeName) {
@@ -19,11 +49,11 @@ const CommentSection = ({ routeName }) => {
     try {
       setIsLoading(true);
       setError(null);
-      console.log('Fetching comments for route:', routeName);
       const response = await axios.get(`/api/comments/${encodeURIComponent(routeName)}`);
       
       if (response.data.success) {
-        setComments(response.data.data);
+        const sortedComments = sortCommentsByDate(response.data.data);
+        setComments(sortedComments);
       } else {
         throw new Error(response.data.message || 'Failed to load comments');
       }
@@ -48,15 +78,17 @@ const CommentSection = ({ routeName }) => {
 
     try {
       setError(null);
+      const now = new Date();
       const response = await axios.post('/api/comments', {
         routeName,
         username: user.username,
-        content: newComment.trim()
+        content: newComment.trim(),
+        timestamp: now.toISOString() // Ensure proper ISO format
       });
 
       if (response.data.success) {
         setNewComment('');
-        fetchComments();
+        await fetchComments(); // Re-fetch to get the updated list
       } else {
         throw new Error(response.data.message || 'Failed to post comment');
       }
@@ -106,7 +138,7 @@ const CommentSection = ({ routeName }) => {
             <div key={comment._id} className="bg-gray-50 p-4 rounded-md">
               <div className="font-medium text-blue-600">{comment.username}</div>
               <div className="text-gray-600 text-sm">
-                {new Date(comment.timestamp).toLocaleDateString()}
+                {formatDate(comment.createdAt) || 'Just now'}
               </div>
               <div className="mt-2">{comment.content}</div>
             </div>

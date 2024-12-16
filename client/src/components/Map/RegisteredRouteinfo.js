@@ -4,7 +4,7 @@ import ElevationChart from '../UserElevationCharts';
 import CommentSection from '../Comments/comment';
 
 const ROAD_TYPE_COLORS = {
-  'Tar/Sealed Road': '#808080',
+  'Sealed Road': '#808080',
   'Gravel/Dirt Road': '#f59e0b',
   'Track/Trail': '#8b4513',
   'Sand': '#fde047',
@@ -14,7 +14,7 @@ const ROAD_TYPE_COLORS = {
 const RouteInfo = ({ route }) => {
   if (!route) return <p className="text-gray-500">Select a route to see details</p>;
 
-  const { name, roadType, notes, stats } = route.properties;
+  const { name, roadType, description, stats } = route.properties;
   const { totalDistance, maxElevation, minElevation, elevationGain } = stats || {};
 
   return (
@@ -31,8 +31,8 @@ const RouteInfo = ({ route }) => {
             <p>{roadType}</p>
           </div>
           <div>
-            <label className="font-medium text-gray-700">Notes:</label>
-            <p className="break-words">{notes || 'No additional information'}</p>
+            <label className="font-medium text-gray-700">Description:</label>
+            <p className="break-words">{description || 'No additional information'}</p>
           </div>
         </div>
 
@@ -77,7 +77,7 @@ RouteInfo.propTypes = {
     properties: PropTypes.shape({
       name: PropTypes.string.isRequired,
       roadType: PropTypes.string.isRequired,
-      notes: PropTypes.string,
+      description: PropTypes.string,
       stats: PropTypes.shape({
         totalDistance: PropTypes.number,
         maxElevation: PropTypes.number,

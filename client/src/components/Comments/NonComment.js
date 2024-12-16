@@ -68,7 +68,7 @@ const CommentSection = ({ routeName }) => {
                   <div className="bg-gray-50 p-4 rounded-md">
                     <div className="font-medium text-blue-600">{comment.username}</div>
                     <div className="text-gray-600 text-sm">
-                      {new Date(comment.timestamp).toLocaleDateString()}
+                      {new Date(comment.createdAt).toLocaleDateString()}
                     </div>
                     <div className="mt-2">{comment.content}</div>
                   </div>

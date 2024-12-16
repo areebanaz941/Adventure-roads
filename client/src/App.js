@@ -13,6 +13,7 @@ import mapboxgl from 'mapbox-gl';
 import ContactPage from './pages/contact';
 import LoginPage from '../src/components/Forms/LoginPage';
 import RegisteredUserHome from '../src/pages/RegisteredUserHome';
+import ResetPassword from './components/ResetPassword';
 // Access environment variable properly
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -33,6 +34,7 @@ function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/user-login" element={<LoginPage />} />
           <Route path="/home" element={<RegisteredUserHome />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           
           {/* Protected Routes */}
           <Route

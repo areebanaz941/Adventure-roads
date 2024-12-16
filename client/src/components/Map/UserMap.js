@@ -14,12 +14,11 @@ const MAP_STYLES = {
 };
 
 const ROUTE_COLORS = {
- 'Tar/Sealed Road': '#808080',
- 'Gravel Road': '#FFA500', 
- 'Dirt Track': '#8B4513',
- 'Off Road': '#FFD700',
- 'Mixed Road': '#90EE90',
- 'Not Yet Defined': '#FF69B4'
+ 'Sealed Road': '#808080',
+  'Gravel/Dirt Road': '#f59e0b',
+  'Track/Trail': '#8b4513',
+  'Sand': '#fde047',
+  'Not Yet Defined': '#d9f99d'
 };
 
 // Add popup styles
@@ -42,33 +41,45 @@ const UserMap = () => {
  const [currentStyle, setCurrentStyle] = useState('satellite');
  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
  const [routes, setRoutes] = useState([]);
- const [selectedRoute, setSelectedRoute] = useState(null);
+ const [selectedRoutes, setSelectedRoutes] = useState([]);
  const [isRouteInfoExpanded, setIsRouteInfoExpanded] = useState(true);
  const [popup, setPopup] = useState(null);
- 
-// Add these functions near the top of your component
+ const [currentRouteIndex, setCurrentRouteIndex] = useState(0);
+
+
+ const getTotalDistance = () => {
+  return selectedRoutes.reduce((total, route) => {
+    return total + (route.properties.stats?.totalDistance || 0);
+  }, 0).toFixed(1);
+};
+
 const handleExportGPX = () => {
-  if (!selectedRoute) return;
+  if (selectedRoutes.length === 0) return;
   
   const gpx = `<?xml version="1.0" encoding="UTF-8"?>
- <gpx version="1.1">
+<gpx version="1.1" creator="Your App Name"
+  xmlns="http://www.topografix.com/GPX/1/1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  ${selectedRoutes.map(route => `
   <trk>
-    <name>${selectedRoute.properties.name}</name>
-    <desc>${selectedRoute.properties.notes}</desc>
+    <name>${route.properties.name || 'Unnamed Route'}</name>
+    <desc>${route.properties.description || ''}</desc>
     <trkseg>
-      ${selectedRoute.geometry.coordinates
-        .map(coord => `<trkpt lat="${coord[1]}" lon="${coord[0]}">
+      ${route.geometry.coordinates
+        .map(coord => `
+      <trkpt lat="${coord[1]}" lon="${coord[0]}">
         <ele>${coord[2] || 0}</ele>
-      </trkpt>`).join('\n')}
+      </trkpt>`).join('')}
     </trkseg>
-  </trk>
- </gpx>`;
+  </trk>`).join('\n')}
+</gpx>`;
 
   const blob = new Blob([gpx], { type: 'application/gpx+xml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${selectedRoute.properties.name || 'route'}.gpx`;
+  a.download = 'selected_routes.gpx';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -76,29 +87,38 @@ const handleExportGPX = () => {
 };
 
 const handleExportKML = () => {
-  if (!selectedRoute) return;
+  if (selectedRoutes.length === 0) return;
 
   const kml = `<?xml version="1.0" encoding="UTF-8"?>
- <kml xmlns="http://www.opengis.net/kml/2.2">
+<kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>${selectedRoute.properties.name}</name>
-    <description>${selectedRoute.properties.notes}</description>
+    <name>Selected Routes</name>
+    ${selectedRoutes.map(route => `
     <Placemark>
+      <name>${route.properties.name || 'Unnamed Route'}</name>
+      <description>${route.properties.description || ''}</description>
+      <Style>
+        <LineStyle>
+          <color>ff0000ff</color>
+          <width>4</width>
+        </LineStyle>
+      </Style>
       <LineString>
+        <tessellate>1</tessellate>
         <coordinates>
-          ${selectedRoute.geometry.coordinates
+          ${route.geometry.coordinates
             .map(coord => `${coord[0]},${coord[1]},${coord[2] || 0}`).join(' ')}
         </coordinates>
       </LineString>
-    </Placemark>
+    </Placemark>`).join('\n')}
   </Document>
- </kml>`;
+</kml>`;
 
   const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${selectedRoute.properties.name || 'route'}.kml`;
+  a.download = 'selected_routes.kml';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -128,52 +148,65 @@ okButton.onclick = () => {
 
 return dialog;
 };
+const showNextRoute = () => {
+  if (currentRouteIndex < selectedRoutes.length - 1) {
+    setCurrentRouteIndex(currentRouteIndex + 1);
+  }
+};
 
+const showPreviousRoute = () => {
+  if (currentRouteIndex > 0) {
+    setCurrentRouteIndex(currentRouteIndex - 1);
+  }
+};
 const handleHelp = () => {
   const helpDialog = createHelpDialog();
   document.body.appendChild(helpDialog);
  };
 
-const handleDeselectAll = () => {
-  setSelectedRoute(null);
+ const handleDeselectAll = () => {
+  setSelectedRoutes([]);
   if (popup) {
     popup.remove();
     setPopup(null);
   }
 };
 
+useEffect(() => {
+  if (map.current) return;
+  
+  map.current = new mapboxgl.Map({
+    container: mapContainer.current,
+    style: MAP_STYLES.streets,
+    center: [133.7751, -25.2744],
+    zoom: 4,
+    projection: 'globe',
+    renderWorldCopies: false
+  });
 
- useEffect(() => {
-   if (map.current) return;
+  map.current.on('style.load', () => {
+    map.current.setFog({
+      color: 'rgb(0, 0, 0)',
+      'high-color': 'rgb(20, 20, 40)',
+      'horizon-blend': 0.2
+    });
+    // Add a small delay to ensure the style is fully loaded
+    setTimeout(() => {
+      routes.forEach((route, index) => addRouteToMap(route, index));
+    }, 100);
+  });
 
-   map.current = new mapboxgl.Map({
-     container: mapContainer.current,
-     style: MAP_STYLES.streets,
-     center: [133.7751, -25.2744],
-     zoom: 4,
-     projection: 'globe',
-     renderWorldCopies: false
-   });
+  map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+  map.current.addControl(
+    new mapboxgl.ScaleControl({
+      maxWidth: 80,
+      unit: 'metric'
+    }),
+    'bottom-right'
+  );
 
-   map.current.on('style.load', () => {
-     map.current.setFog({
-       color: 'rgb(0, 0, 0)',
-       'high-color': 'rgb(20, 20, 40)',
-       'horizon-blend': 0.2
-     });
-   });
-
-   map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-   map.current.addControl(
-     new mapboxgl.ScaleControl({
-       maxWidth: 80,
-       unit: 'metric'
-     }),
-     'bottom-right'
-   );
-
-   fetchRoutes();
- }, []);
+  fetchRoutes();
+}, []);  // Remove routes from dependency array to prevent infinite loop
 
  const fetchRoutes = async () => {
    try {
@@ -199,59 +232,61 @@ const handleDeselectAll = () => {
    properties: {
      ...routeData.properties,
      roadType: routeData.properties.roadType || 'Not Yet Defined',
-     notes: routeData.properties.notes || '',
+     description: routeData.properties.description || '',
    },
    id: routeData._id,
  });
 
  const addRouteToMap = (route, index) => {
-   if (!map.current || !route?.geometry?.coordinates) return;
- 
-   const sourceId = `route-${index}`;
-   const layerId = `${sourceId}-layer`;
-   const outlineLayerId = `${sourceId}-outline`;
- 
-   if (map.current.getLayer(outlineLayerId)) map.current.removeLayer(outlineLayerId);
-   if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
-   if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
- 
-   map.current.addSource(sourceId, {
-     type: 'geojson',
-     data: route
-   });
- 
-   map.current.addLayer({
-     id: outlineLayerId,
-     type: 'line',
-     source: sourceId,
-     layout: {
-       'line-join': 'round',
-       'line-cap': 'round',
-       visibility: 'visible'
-     },
-     paint: {
-       'line-color': '#000000',
-       'line-width': selectedRoute?.id === route.id ? 6 : 5,
-       'line-opacity': 0.5
-     }
-   });
- 
-   map.current.addLayer({
-     id: layerId,
-     type: 'line',
-     source: sourceId,
-     layout: {
-       'line-join': 'round',
-       'line-cap': 'round',
-       visibility: 'visible'
-     },
-     paint: {
-       'line-color': ROUTE_COLORS[route.properties.roadType] || ROUTE_COLORS['Not Yet Defined'],
-       'line-width': selectedRoute?.id === route.id ? 4 : 3,
-       'line-opacity': 1
-     }
-   });
- };
+  if (!map.current || !route?.geometry?.coordinates) return;
+
+  const sourceId = `route-${index}`;
+  const layerId = `${sourceId}-layer`;
+  const outlineLayerId = `${sourceId}-outline`;
+
+  if (map.current.getLayer(outlineLayerId)) map.current.removeLayer(outlineLayerId);
+  if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
+  if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
+
+  map.current.addSource(sourceId, {
+    type: 'geojson',
+    data: route
+  });
+
+  const isSelected = selectedRoutes.some(r => r.id === route.id);
+
+  map.current.addLayer({
+    id: outlineLayerId,
+    type: 'line',
+    source: sourceId,
+    layout: {
+      'line-join': 'round',
+      'line-cap': 'round',
+      visibility: 'visible'
+    },
+    paint: {
+      'line-color': '#000000',
+      'line-width': isSelected ? 6 : 5,
+      'line-opacity': 0.5
+    }
+  });
+
+  map.current.addLayer({
+    id: layerId,
+    type: 'line',
+    source: sourceId,
+    layout: {
+      'line-join': 'round',
+      'line-cap': 'round',
+      visibility: 'visible'
+    },
+    paint: {
+      'line-color': ROUTE_COLORS[route.properties.roadType] || ROUTE_COLORS['Not Yet Defined'],
+      'line-width': isSelected ? 4 : 3,
+      'line-opacity': isSelected ? 1 : 0.8
+    }
+  });
+};
 
  const addPopup = (route, coordinates) => {
   if (popup) {
@@ -275,10 +310,10 @@ const handleDeselectAll = () => {
           <div class="mb-2">
             <strong class="text-gray-700">Type:</strong> ${route.properties.roadType}
           </div>
-          ${route.properties.notes ? 
+          ${route.properties.description ? 
             `<div class="mb-2">
-              <strong class="text-gray-700">Notes:</strong><br/>
-              ${route.properties.notes}
+              <strong class="text-gray-700">Description:</strong><br/>
+              ${route.properties.description}
             </div>` : ''
           }
           <div>
@@ -337,46 +372,64 @@ document.head.appendChild(style);
          const outlineLayerId = `route-${index}-outline`;
          
          if (map.current.getLayer(layerId)) {
-           if (route.id === selectedRoute?.id) {
-             map.current.setPaintProperty(outlineLayerId, 'line-width', 6);
-             map.current.setPaintProperty(layerId, 'line-width', 4);
-             map.current.setPaintProperty(layerId, 'line-opacity', 0.9);
-           } else {
-             map.current.setPaintProperty(outlineLayerId, 'line-width', 5);
-             map.current.setPaintProperty(layerId, 'line-width', 3);
-             map.current.setPaintProperty(layerId, 'line-opacity', 0.8);
-           }
+          if (selectedRoutes.some(r => r.id === route.id)) {
+            map.current.setPaintProperty(outlineLayerId, 'line-width', 6);
+            map.current.setPaintProperty(layerId, 'line-width', 4);
+            map.current.setPaintProperty(layerId, 'line-opacity', 0.9);
+          } else {
+            map.current.setPaintProperty(outlineLayerId, 'line-width', 5);
+            map.current.setPaintProperty(layerId, 'line-width', 3);
+            map.current.setPaintProperty(layerId, 'line-opacity', 0.8);
+          }
          }
        });
      }
    };
  
+   // Update click handler
    const handleClick = (e) => {
-     const features = map.current.queryRenderedFeatures(e.point, {
-       layers: routes.map((_, index) => [
-         `route-${index}-layer`,
-         `route-${index}-outline`
-       ]).flat()
-     });
- 
-     if (features.length > 0) {
-       const clickedRoute = routes.find((route, index) => 
-         [`route-${index}-layer`, `route-${index}-outline`].includes(features[0].layer.id)
-       );
-       
-       if (clickedRoute) {
-         setSelectedRoute(clickedRoute);
-         addPopup(clickedRoute, e.lngLat);
-       }
-     } else {
-       setSelectedRoute(null);
-       if (popup) {
-         popup.remove();
-         setPopup(null);
-       }
-     }
-   };
- 
+    const features = map.current.queryRenderedFeatures(e.point, {
+      layers: routes.map((_, index) => [
+        `route-${index}-layer`,
+        `route-${index}-outline`
+      ]).flat()
+    });
+  
+    if (features.length > 0) {
+      const clickedRoute = routes.find((route, index) => 
+        [`route-${index}-layer`, `route-${index}-outline`].includes(features[0].layer.id)
+      );
+      
+      if (clickedRoute) {
+        const isAlreadySelected = selectedRoutes.some(r => r.id === clickedRoute.id);
+        
+        if (isAlreadySelected) {
+          // Remove from selection
+          setSelectedRoutes(prev => prev.filter(r => r.id !== clickedRoute.id));
+        } else {
+          // Add to selection
+          setSelectedRoutes(prev => [...prev, clickedRoute]);
+        }
+        
+        // Update route styling
+        routes.forEach((route, index) => {
+          const layerId = `route-${index}-layer`;
+          const outlineLayerId = `route-${index}-outline`;
+          
+          if (map.current.getLayer(layerId)) {
+            const isSelected = route.id === clickedRoute.id ? !isAlreadySelected : 
+                             selectedRoutes.some(r => r.id === route.id);
+            
+            map.current.setPaintProperty(outlineLayerId, 'line-width', isSelected ? 6 : 5);
+            map.current.setPaintProperty(layerId, 'line-width', isSelected ? 4 : 3);
+            map.current.setPaintProperty(layerId, 'line-opacity', isSelected ? 1 : 0.8);
+          }
+        });
+  
+        addPopup(clickedRoute, e.lngLat);
+      }
+  }
+}
    map.current.on('mousemove', handleMouseMove);
    map.current.on('click', handleClick);
  
@@ -389,28 +442,61 @@ document.head.appendChild(style);
        popup.remove();
      }
    };
- }, [routes, selectedRoute, popup]);
+ }, [routes, selectedRoutes, popup]);
 
- const changeMapStyle = (style) => {
-   map.current.setStyle(MAP_STYLES[style]);
-   setCurrentStyle(style);
-   setIsStyleMenuOpen(false);
- };
+ const handleRouteClick = (route, e) => {
+  const isAlreadySelected = selectedRoutes.some(r => r.id === route.id);
+  
+  if (isAlreadySelected) {
+    // Deselect the route
+    setSelectedRoutes(selectedRoutes.filter(r => r.id !== route.id));
+  } else {
+    // Add to selection
+    setSelectedRoutes([...selectedRoutes, route]);
+  }
+  
+  addPopup(route, e.lngLat);
+};
+
+const changeMapStyle = (style) => {
+  const currentRoutes = [...routes]; // Store current routes
+  
+  map.current.once('style.load', () => {
+    // Re-add all routes after style is loaded
+    setTimeout(() => {
+      currentRoutes.forEach((route, index) => {
+        addRouteToMap(route, index);
+      });
+    }, 100);
+  });
+
+  map.current.setStyle(MAP_STYLES[style]);
+  setCurrentStyle(style);
+  setIsStyleMenuOpen(false);
+};
+
 
  return (
-   <div className="min-h-screen">
-     <div className="bg-black">
-       <div className="flex">
-         <div className="w-72 bg-[#d2d2d3] border-r border-gray-200">
-           <div className="bg-[#4B8BF4] text-white p-2 flex justify-between items-center">
-             <h3 className="font-bold">Route Info</h3>
-             <button className="hover:bg-blue-600 px-2 rounded">▼</button>
-           </div>
-           <div className="p-4">
-             {selectedRoute ? <RouteInfo route={selectedRoute} /> : <p className="text-gray-900">Select a Route to see details..</p>}
-           </div>
-         </div>
-         
+<div className="min-h-screen">
+  <div className="bg-black">
+    <div className="flex">
+      <div className="w-72 bg-[#d2d2d3] border-r border-gray-200">
+        <div className="bg-[#4B8BF4] text-white p-2 flex justify-between items-center">
+          <h3 className="font-bold">Route Info</h3>
+          <button className="hover:bg-blue-600 px-2 rounded">▼</button>
+        </div>
+        <div className="p-4">
+           {selectedRoutes.length > 0 ? (
+         <>
+         {selectedRoutes.map(route => (
+           <RouteInfo key={route.id} route={route} />
+          ))}
+       </>
+     ) : (
+       <p className="text-gray-900">Select routes to see details...</p>
+         )}
+       </div>
+      </div>  
          <div className="flex-1">
            <div className="bg-[#4B8BF4] p-2 flex justify-between items-center">
              <div className="flex space-x-2">
@@ -419,7 +505,6 @@ document.head.appendChild(style);
               <button onClick={handleHelp} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">? Help</button>
               <button onClick={handleDeselectAll} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm">× Deselect All</button>
              </div>
-
              <div className="relative">
                <button onClick={() => setIsStyleMenuOpen(!isStyleMenuOpen)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm flex items-center">Base Map ▼</button>
                {isStyleMenuOpen && (
@@ -431,16 +516,13 @@ document.head.appendChild(style);
                )}
              </div>
            </div>
-
            <div ref={mapContainer} className="h-[calc(100vh-48px)]" />
          </div>
        </div>
      </div>
-
      <div className="bg-white">
        <UsingTheMap />
      </div>
-     
    </div>
  );
 };

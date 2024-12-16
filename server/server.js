@@ -53,6 +53,9 @@ app.use('/api', tempRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/comments', commentRoutes);
 
+// Mount the routes - this is crucial
+app.use('/api/user', userRoutes);  // This line is important
+
 // Routes
 app.post('/api/routes', async (req, res) => {
   try {

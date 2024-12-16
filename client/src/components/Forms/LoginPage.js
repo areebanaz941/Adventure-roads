@@ -21,6 +21,8 @@ const LoginPage = () => {
   });
   const [errors, setErrors] = useState({});
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
 
   const handleLoginChange = (e) => {
     const { name, value } = e.target;
@@ -81,6 +83,28 @@ const LoginPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    try {
+      // Make sure this matches your backend route exactly
+      const response = await axios.post('/api/user/reset-password', { email: resetEmail });
+      if (response.data.success) {
+        setNotification({
+          show: true,
+          message: 'Password reset instructions sent to your email',
+          type: 'success'
+        });
+        setShowForgotPassword(false);
+      }
+    } catch (error) {
+      setNotification({
+        show: true,
+        message: error.response?.data?.message || 'Failed to send reset instructions',
+        type: 'error'
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md space-y-6">
@@ -120,6 +144,15 @@ const LoginPage = () => {
             Create new account
           </button>
         </div>
+        <div className="text-center mt-4">
+  <button 
+    onClick={() => setShowForgotPassword(true)}
+    className="text-blue-500 hover:text-blue-600 text-sm"
+  >
+    Forgot your password?
+  </button>
+</div>
+
       </div>
 
       {showSignup && (
@@ -218,6 +251,42 @@ const LoginPage = () => {
           </div>
         </div>
       )}
+
+      {showForgotPassword && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+      <h2 className="text-2xl font-bold mb-6">Reset Password</h2>
+      <form onSubmit={handleForgotPassword} className="space-y-4">
+        <p className="text-gray-600 mb-4">
+          Enter your email address and we'll send you instructions to reset your password.
+        </p>
+        <input
+          type="email"
+          value={resetEmail}
+          onChange={(e) => setResetEmail(e.target.value)}
+          placeholder="Enter your email"
+          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        />
+        <div className="flex space-x-4">
+          <button 
+            type="button"
+            onClick={() => setShowForgotPassword(false)}
+            className="w-1/2 px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            className="w-1/2 bg-blue-500 text-white px-4 py-3 rounded-md hover:bg-blue-600"
+          >
+            Send Instructions
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
       {notification.show && (
         <div className={`fixed top-20 right-4 p-4 rounded-lg shadow-lg ${
