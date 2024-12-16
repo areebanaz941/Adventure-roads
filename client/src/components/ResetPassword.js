@@ -1,4 +1,3 @@
-// components/ResetPassword.js
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from './Forms/axiosconfig';
@@ -42,27 +41,6 @@ const ResetPassword = () => {
         type: 'error'
       });
     }
-    const handleForgotPassword = async (e) => {
-  e.preventDefault();
-  try {
-    // Make sure this matches your backend route exactly
-    const response = await axios.post('/api/user/reset-password', { email: resetEmail });
-    if (response.data.success) {
-      setNotification({
-        show: true,
-        message: 'Password reset instructions sent to your email',
-        type: 'success'
-      });
-      setShowForgotPassword(false);
-    }
-  } catch (error) {
-    setNotification({
-      show: true,
-      message: error.response?.data?.message || 'Failed to send reset instructions',
-      type: 'error'
-    });
-  }
-};
   };
 
   return (
