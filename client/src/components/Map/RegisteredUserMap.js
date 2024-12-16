@@ -14,12 +14,11 @@ const MAP_STYLES = {
 };
 
 const ROUTE_COLORS = {
- 'Tar/Sealed Road': '#808080',
- 'Gravel Road': '#FFA500', 
- 'Dirt Track': '#8B4513',
- 'Off Road': '#FFD700',
- 'Mixed Road': '#90EE90',
- 'Not Yet Defined': '#FF69B4'
+ 'Sealed Road': '#808080',
+  'Gravel/Dirt Road': '#f59e0b',
+  'Track/Trail': '#8b4513',
+  'Sand': '#fde047',
+  'Not Yet Defined': '#d9f99d'
 };
 
 // Add popup styles
@@ -54,7 +53,7 @@ const handleExportGPX = () => {
  <gpx version="1.1">
   <trk>
     <name>${selectedRoute.properties.name}</name>
-    <desc>${selectedRoute.properties.notes}</desc>
+    <desc>${selectedRoute.properties.description}</desc>
     <trkseg>
       ${selectedRoute.geometry.coordinates
         .map(coord => `<trkpt lat="${coord[1]}" lon="${coord[0]}">
@@ -82,7 +81,7 @@ const handleExportKML = () => {
  <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>${selectedRoute.properties.name}</name>
-    <description>${selectedRoute.properties.notes}</description>
+    <description>${selectedRoute.properties.description}</description>
     <Placemark>
       <LineString>
         <coordinates>
@@ -199,7 +198,7 @@ const handleDeselectAll = () => {
    properties: {
      ...routeData.properties,
      roadType: routeData.properties.roadType || 'Not Yet Defined',
-     notes: routeData.properties.notes || '',
+     description: routeData.properties.description || '',
    },
    id: routeData._id,
  });
@@ -275,10 +274,10 @@ const handleDeselectAll = () => {
           <div class="mb-2">
             <strong class="text-gray-700">Type:</strong> ${route.properties.roadType}
           </div>
-          ${route.properties.notes ? 
+          ${route.properties.description ? 
             `<div class="mb-2">
-              <strong class="text-gray-700">Notes:</strong><br/>
-              ${route.properties.notes}
+              <strong class="text-gray-700">Description:</strong><br/>
+              ${route.properties.description}
             </div>` : ''
           }
           <div>

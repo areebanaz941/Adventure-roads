@@ -34,15 +34,10 @@ const Navbar = () => {
             to="/user-login" 
             className="text-[#436485] hover:text-[#2c4359] font-medium transition-colors"
           >
-            REGISTERATION
+            SIGN IN
           </Link>
 
-          <Link 
-            to="/admin-login" 
-            className="text-[#436485] hover:text-[#2c4359] font-medium transition-colors"
-          >
-            ADMIN 
-          </Link>
+          
         </div>
       </div>
     </nav>

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ElevationChart from './ElevationChart';
-
+import { routeService } from '../components/services/routeService';
 const Modal = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
   return (
@@ -25,13 +25,14 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
   const [changes, setChanges] = useState({});
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const roadTypes = [
-    'Tar/Sealed Road',
-    'Gravel Road',
-    'Dirt Track',
-    'Off Road',
-    'Mixed Surface'
+    'Not Yet Defined',
+    'Sealed Road',
+    'Gravel/Dirt Road',
+    'Track/Trail',
+    'Sand'
   ];
 
   const difficultyLevels = [
@@ -46,6 +47,61 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
   useEffect(() => {
     setChanges({});
   }, [selectedRoute]);
+
+  const handleSaveChanges = async () => {
+    if (!selectedRoute || !selectedRoute._id) {
+      alert('This route has not been saved to the database yet.');
+      return;
+    }
+  
+    if (Object.keys(changes).length === 0) {
+      alert('No changes to save.');
+      return;
+    }
+  
+    setIsSaving(true);
+  
+    try {
+      // Prepare the route data for update
+      const routeToUpdate = {
+        _id: selectedRoute._id,
+        type: "Feature",
+        properties: {
+          name: selectedRoute.properties.name,
+          description: selectedRoute.properties.description,
+          roadType: selectedRoute.properties.roadType,
+          difficulty: selectedRoute.properties.difficulty,
+          stats: selectedRoute.properties.stats
+        },
+        geometry: selectedRoute.geometry
+      };
+  
+      // Call the service method to update the route
+      const response = await routeService.updateRoute(routeToUpdate);
+      if (response.success) {
+        // Update the routes in the parent component
+        setRoutes(prevRoutes => 
+          prevRoutes.map(route => 
+            route._id === selectedRoute._id ? { ...route, ...routeToUpdate } : route
+          )
+        );
+  
+        // Reset changes and show success message
+        setChanges({});
+        setIsSuccess(true);
+        setTimeout(() => setIsSuccess(false), 3000);
+      } else {
+        throw new Error(response.message || 'Failed to update route');
+      }
+    } catch (error) {
+      console.error('Error saving route:', error);
+      alert(`Failed to save changes: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
 
   const handleInputChange = (field, value) => {
     if (selectedRoute) {
@@ -121,6 +177,8 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
                 onChange={(e) => handleInputChange('name', e.target.value)}
               />
             </div>
+            
+          
 
             {/* Road Type and Difficulty */}
             <div className="bg-white rounded-lg p-4 shadow-sm">
@@ -131,7 +189,7 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
                   </label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    value={selectedRoute.properties.roadType || 'Tar/Sealed Road'}
+                    value={selectedRoute.properties.roadType || 'Sealed Road'}
                     onChange={(e) => handleInputChange('roadType', e.target.value)}
                   >
                     {roadTypes.map(type => (
@@ -221,8 +279,22 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
                 <ElevationChart data={selectedRoute.geometry.coordinates} />
               </div>
             </div>
-
-        
+            {/* Save Changes Button */}
+            {Object.keys(changes).length > 0 && (
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <button
+                  onClick={handleSaveChanges}
+                  disabled={isSaving}
+                  className={`w-full py-2 rounded ${
+                    isSaving 
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-gray-900">Select a route to view details.</p>

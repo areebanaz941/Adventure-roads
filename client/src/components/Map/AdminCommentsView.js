@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import axios from '../Forms//axiosconfig'; // Adjust path as needed
+import axios from '../Forms/axiosconfig';
 
 const AdminCommentsDashboard = () => {
   const [comments, setComments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Sort function to ensure latest comments are first
+  const sortCommentsByDate = (comments) => {
+    return [...comments].sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return dateB - dateA; // Most recent first
+    });
+  };
 
   useEffect(() => {
     fetchAllComments();
@@ -16,7 +25,9 @@ const AdminCommentsDashboard = () => {
       const response = await axios.get('/api/comments');
       
       if (response.data.success) {
-        setComments(response.data.data);
+        // Sort comments with the latest first
+        const sortedComments = sortCommentsByDate(response.data.data);
+        setComments(sortedComments);
       } else {
         throw new Error(response.data.message);
       }
@@ -38,7 +49,11 @@ const AdminCommentsDashboard = () => {
       const response = await axios.delete(`/api/comments/${commentId}`);
 
       if (response.data.success) {
-        setComments(prevComments => prevComments.filter(c => c._id !== commentId));
+        // Remove the deleted comment and ensure sort order is maintained
+        setComments(prevComments => {
+          const updatedComments = prevComments.filter(c => c._id !== commentId);
+          return sortCommentsByDate(updatedComments);
+        });
       } else {
         throw new Error(response.data.message);
       }
@@ -70,27 +85,28 @@ const AdminCommentsDashboard = () => {
     <div className="max-w-6xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-6">User Comments</h2>
       <div className="grid gap-4">
-        {comments.map((comment) => (
-          <div key={comment._id} className="bg-white p-4 rounded-lg shadow">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h3 className="font-medium text-lg">{comment.routeName}</h3>
-                <p className="text-sm text-gray-500">by {comment.username}</p>
+        {comments.length > 0 ? (
+          comments.map((comment) => (
+            <div key={comment._id} className="bg-white p-4 rounded-lg shadow">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="font-medium text-lg">{comment.routeName}</h3>
+                  <p className="text-sm text-gray-500">by {comment.username}</p>
+                </div>
+                <button
+                  onClick={() => handleDeleteComment(comment._id)}
+                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                >
+                  Delete
+                </button>
               </div>
-              <button
-                onClick={() => handleDeleteComment(comment._id)}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-              >
-                Delete
-              </button>
+              <p className="text-gray-700">{comment.content}</p>
+              <div className="mt-2 text-sm text-gray-500">
+                {new Date(comment.createdAt).toLocaleString()}
+              </div>
             </div>
-            <p className="text-gray-700">{comment.content}</p>
-            <div className="mt-2 text-sm text-gray-500">
-              {new Date(comment.timestamp).toLocaleString()}
-            </div>
-          </div>
-        ))}
-        {!comments.length && (
+          ))
+        ) : (
           <p className="text-center text-gray-500">No comments to review</p>
         )}
       </div>

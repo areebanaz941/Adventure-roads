@@ -2,10 +2,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import ElevationChart from '../ElevationChart';
 import LeftSidebar from '../LeftSidebar';
 import { routeService } from '../services/routeService';
-// Add to imports at the top
 import SaveNotification from '../SaveNotification';
 import SplitRouteDialog from '../SplitRouteDialog';
 import AdminCommentsView from '../Map/AdminCommentsView';
@@ -29,6 +27,7 @@ const AdminDashboard = () => {
   const [hoveredRouteId, setHoveredRouteId] = useState(null);
   const [saveStatus, setSaveStatus] = useState(null);
   const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false);
+  const [isSplitting, setIsSplitting] = useState(false);
 
 
 
@@ -80,7 +79,7 @@ const AdminDashboard = () => {
       paint: {
         'line-color': '#000000',
         'line-width': selectedRoute?.id === route.id ? 6 : 5,
-        'line-opacity': 0.5
+        'line-opacity': 1
       }
     });
   
@@ -102,18 +101,17 @@ const AdminDashboard = () => {
     });
   
     // Click handlers
-    map.current.on('click', layerId, () => setSelectedRoute(route));
-    map.current.on('click', outlineLayerId, () => setSelectedRoute(route));
+    map.current.on('click', layerId, () => !isSplitting && setSelectedRoute(route));
+    map.current.on('click', outlineLayerId, () => !isSplitting && setSelectedRoute(route));
   };
 
 // Add the ROUTE_COLORS constant at the top of your file with your other constants
 const ROUTE_COLORS = {
-  'Tar/Sealed Road': '#808080',  // Gray for sealed roads
-  'Gravel Road': '#FFA500',      // Orange for gravel/dirt roads
-  'Dirt Track': '#8B4513',       // Brown for tracks/trails
-  'Off Road': '#FFD700',         // Yellow for off-road
-  'Mixed Road': '#90EE90',       // Light green for mixed
-  'Not Yet Defined': '#FF69B4'   // Pink for undefined
+  'Sealed Road': '#808080',  // Gray for sealed roads
+  'Gravel/Dirt Road': '#FFA500',      // Orange for gravel/dirt roads
+  'Track/Trail': '#8B4513',       // Brown for tracks/trails
+  'Sand': '#FFD700',         // Yellow for off-road
+  'Not Yet Defined': '#90EE90'     // Light green for undefined
 };
 
   // Add this right after your other helper functions and before the useEffect
@@ -127,59 +125,49 @@ const addCustomControls = (map) => {
   style.textContent = `
     .custom-controls {
       position: absolute;
-      top: 80px;
+      top: 115px;
       right: 10px;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgb(255, 255, 255);
+      box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 0px 2px;
       border-radius: 4px;
       overflow: hidden;
-      padding: 4px;
-      gap: 4px;
+      padding: 0;
       display: flex;
       flex-direction: column;
     }
     .custom-control-button {
-      width: 30px;
-      height: 30px;
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
+      width: 29px;
+      height: 29px;
+      background: rgb(255, 255, 255);
+      border: none;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 6px;
-      transition: all 0.2s;
+    }
+    .custom-control-button:last-child {
+      border-bottom: none;
     }
     .custom-control-button:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.3);
+      background-color: rgb(242, 242, 242);
     }
     .custom-control-button svg {
-      width: 16px;
-      height: 16px;
-      fill: white;
-      stroke: white;
+      width: 18px;
+      height: 18px;
+      fill: rgb(55, 55, 55);
+      display: block;
     }
     .custom-control-separator {
       height: 1px;
-      background: rgba(255, 255, 255, 0.2);
-      margin: 4px 0;
+      background: rgba(0, 0, 0, 0.1);
+      margin: 0;
     }
   `;
   document.head.appendChild(style);
 
   const buttons = [
-    {
-      icon: `<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg>`,
-      onClick: () => map.zoomIn(),
-      title: 'Zoom in'
-    },
-    {
-      icon: `<svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14z"/></svg>`,
-      onClick: () => map.zoomOut(),
-      title: 'Zoom out'
-    },
-    'separator',
     {
       icon: `<svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.3l7.5-9l7.5 9z"/></svg>`,
       onClick: () => map.easeTo({ bearing: 0, pitch: 0 }),
@@ -293,57 +281,52 @@ const addCustomControls = (map) => {
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-    map.current.addControl(
-      new mapboxgl.ScaleControl({
-        maxWidth: 80,
-        unit: 'metric'
-      }),
-      'bottom-right'
-    );
+      map.current.addControl(
+        new mapboxgl.ScaleControl({ maxWidth: 80, unit: 'metric' }),
+        'bottom-right'
+      );
       // Add this line to fetch routes when map initializes
       fetchRoutes();
 
   }, []);
 
   // Add these new functions to handle route fetching
-const fetchRoutes = async () => {
-  try {
-    const response = await routeService.getAllRoutes();
+  const fetchRoutes = async () => {
+    try {
+      const response = await routeService.getAllRoutes();
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch routes');
+      }
 
-    console.log("Full Response:", response);
-    if (!response.success) {
-      throw new Error(response.message);
+      const routesData = response.data.data.map(transformRouteData);
+      setRoutes(routesData);
+
+      // Add fetched routes to map
+      routesData.forEach((route, index) => addRouteToMap(route, index));
+    } catch (error) {
+      console.error('Error fetching routes:', error);
+      setSaveStatus({
+        type: 'error',
+        message: 'Failed to fetch routes: ' + error.message
+      });
     }
+  };
 
-    if (!Array.isArray(response.data.data)) {
-      console.error("Unexpected data format:", response.data);
-      throw new Error("Expected an array of routes in the 'data.data' property.");
-    }
-
-    const routesData = response.data.data.map(transformRouteData);
-    setRoutes(routesData);
-
-    // Add fetched routes to map
-    routesData.forEach((route, index) => addRouteToMap(route, index));
-  } catch (error) {
-    console.error('Error fetching routes:', error);
-  }
-};
-
-const transformRouteData = (routeData) => ({
-  ...routeData,
-  properties: {
-    ...routeData.properties,
-    roadType: routeData.properties.roadType || 'Not Yet Defined',
-    notes: routeData.properties.notes || '',
-    stats: routeData.properties.stats || {
-      totalDistance: 0,
-      maxElevation: 0,
-      minElevation: 0,
-      elevationGain: 0,
-      numberOfPoints: 0
-    }
-  },
+  const transformRouteData = (routeData) => ({
+    ...routeData,
+    properties: {
+      ...routeData.properties,
+      roadType: routeData.properties.roadType || 'Not Yet Defined',
+      notes: routeData.properties.notes || '',
+      stats: routeData.properties.stats || {
+        totalDistance: 0,
+        maxElevation: 0,
+        minElevation: 0,
+        elevationGain: 0,
+        numberOfPoints: 0
+      }
+    },
   id: routeData._id // Ensure unique identifier
 });
 
@@ -600,61 +583,41 @@ const buttonFunctions = {
       });
       return;
     }
-
+  
     try {
-      // Prepare route data with [longitude, latitude, elevation] for waypoints
       const routeToSave = {
         type: "Feature",
         properties: {
           name: selectedRoute.properties.name,
           description: selectedRoute.properties.description || "No description",
           fileName: selectedRoute.properties.fileName,
-          roadType: selectedRoute.properties.roadType || "Tar/Sealed Road",
+          roadType: selectedRoute.properties.roadType || "Not yet defined",
           difficulty: selectedRoute.properties.difficulty || "Unknown",
           time: selectedRoute.properties.time,
-          stats: {
-            totalDistance: Number(selectedRoute.properties.stats.totalDistance),
-            maxElevation: Number(selectedRoute.properties.stats.maxElevation),
-            minElevation: Number(selectedRoute.properties.stats.minElevation),
-            elevationGain: Number(selectedRoute.properties.stats.elevationGain),
-            numberOfPoints: Number(selectedRoute.properties.stats.numberOfPoints)
-          }
+          stats: selectedRoute.properties.stats
         },
-        geometry: {
-          type: "LineString",
-          coordinates: selectedRoute.geometry.coordinates.map(coord => [
-            Number(coord[0]), // longitude
-            Number(coord[1]), // latitude
-            coord[2] !== undefined ? Number(coord[2]) : 0 // elevation, default to 0 if missing
-          ])
-        },
+        geometry: selectedRoute.geometry,
         waypoints: selectedRoute.geometry.coordinates.map(coord => ({
-          latitude: coord[1],   // lat
-          longitude: coord[0],  // lon
-          elevation: coord[2] !== undefined ? coord[2] : 0 // Elevation, default to 0
+          latitude: coord[1],
+          longitude: coord[0],
+          elevation: coord[2] !== undefined ? coord[2] : 0
         }))
       };
-
+  
       const response = await routeService.saveRoute(routeToSave);
-
+  
       if (response.success) {
         setSaveStatus({
           type: 'success',
           message: `Route "${routeToSave.properties.name}" saved successfully!`,
           route: response.data
         });
-
-        // Update the routes list with the saved route
-        setRoutes(prevRoutes => 
-          prevRoutes.map(route => 
-            route.id === selectedRoute.id ? { ...route, _id: response.data._id } : route
-          )
-        );
-
+  
+        // Update routes list with saved route
+        await fetchRoutes();
       } else {
         throw new Error(response.message || 'Failed to save route');
       }
-
     } catch (error) {
       console.error('Save error:', error);
       setSaveStatus({
@@ -750,21 +713,16 @@ const buttonFunctions = {
     }
   },
   // Add to buttonFunctions object
-splitRouteAtPoint: function() {
-  if (!selectedRoute) {
-    alert('Please select a route to split');
-    return;
-  }
+  splitRouteAtPoint: () => {
+    if (!selectedRoute) {
+      alert('Please select a route to split');
+      return;
+    }
 
-  // Toggle cursor to indicate splitting mode
-  map.current.getCanvas().style.cursor = 'crosshair';
+    setIsSplitting(true);
+    map.current.getCanvas().style.cursor = 'crosshair';
 
-  const handleClick = (e) => {
-    const features = map.current.queryRenderedFeatures(e.point, {
-      layers: routes.map((_, index) => `route-${index}-layer`)
-    });
-
-    if (features.length > 0) {
+    const handleSplitClick = (e) => {
       const clickedPoint = map.current.unproject(e.point);
       const coordinates = selectedRoute.geometry.coordinates;
       
@@ -786,7 +744,7 @@ splitRouteAtPoint: function() {
         }
       });
 
-      // Split into two routes
+      // Create two new routes
       const route1 = {
         ...selectedRoute,
         id: `split-1-${Date.now()}`,
@@ -813,13 +771,13 @@ splitRouteAtPoint: function() {
         }
       };
 
-      // Update routes
+      // Remove old route and add new routes
       setRoutes(prevRoutes => {
         const newRoutes = prevRoutes.filter(r => r.id !== selectedRoute.id);
         return [...newRoutes, route1, route2];
       });
 
-      // Remove old route layers and sources
+      // Clean up the map
       const routeIndex = routes.findIndex(r => r.id === selectedRoute.id);
       const sourceId = `route-${routeIndex}`;
       
@@ -835,24 +793,28 @@ splitRouteAtPoint: function() {
       addRouteToMap(route1, routes.length);
       addRouteToMap(route2, routes.length + 1);
 
-      setSelectedRoute(route1);
-    }
-  };
-
-  // Add click handler
-  map.current.on('click', handleClick);
-
-  // Add ESC key handler to exit split mode
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      map.current.off('click', handleClick);
+      // Reset splitting state
+      setIsSplitting(false);
       map.current.getCanvas().style.cursor = '';
-      document.removeEventListener('keydown', escHandler);
-    }
-  };
+      map.current.off('click', handleSplitClick);
+      setSelectedRoute(route1);
+    };
 
-  document.addEventListener('keydown', escHandler);
-}
+    // Add click handler
+    map.current.on('click', handleSplitClick);
+
+    // Add ESC key handler
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        setIsSplitting(false);
+        map.current.off('click', handleSplitClick);
+        map.current.getCanvas().style.cursor = '';
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+
+    document.addEventListener('keydown', escHandler);
+  }
 };
 
 const handleClearNotification = () => {
