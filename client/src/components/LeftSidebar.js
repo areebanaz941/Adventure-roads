@@ -189,7 +189,7 @@ const LeftSidebar = ({ routes, selectedRoute, setSelectedRoute, setRoutes }) => 
                   </label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    value={selectedRoute.properties.roadType || 'Sealed Road'}
+                    value={selectedRoute.properties.roadType || 'Not Yet Defined'}
                     onChange={(e) => handleInputChange('roadType', e.target.value)}
                   >
                     {roadTypes.map(type => (

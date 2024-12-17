@@ -208,84 +208,151 @@ useEffect(() => {
   fetchRoutes();
 }, []);  // Remove routes from dependency array to prevent infinite loop
 
- const fetchRoutes = async () => {
-   try {
-     const response = await routeService.getAllRoutes();
-     if (!response.success) {
-       throw new Error(response.message);
-     }
+const fetchRoutes = async () => {
+  try {
+    console.log('Fetching routes...'); // Debug log
+    const response = await routeService.getAllRoutes();
+    console.log('Service Response:', response); // Debug log
 
-     if (!Array.isArray(response.data.data)) {
-       throw new Error("Expected an array of routes");
-     }
+    if (!response.success) {
+      console.error('Failed to fetch routes:', response.message);
+      return;
+    }
 
-     const routesData = response.data.data.map(transformRouteData);
-     setRoutes(routesData);
-     routesData.forEach((route, index) => addRouteToMap(route, index));
-   } catch (error) {
-     console.error('Error fetching routes:', error);
-   }
- };
+    if (!response.data?.data) {
+      console.error('Invalid response format');
+      return;
+    }
 
- const transformRouteData = (routeData) => ({
-   ...routeData,
-   properties: {
-     ...routeData.properties,
-     roadType: routeData.properties.roadType || 'Not Yet Defined',
-     description: routeData.properties.description || '',
-   },
-   id: routeData._id,
- });
+    const routesData = response.data.data;
 
+    // Clear existing routes
+    if (map.current) {
+      routes.forEach((_, index) => {
+        const sourceId = `route-${index}`;
+        const layerId = `${sourceId}-layer`;
+        const outlineLayerId = `${sourceId}-outline`;
+
+        if (map.current.getLayer(outlineLayerId)) map.current.removeLayer(outlineLayerId);
+        if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
+        if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
+      });
+    }
+
+    // Wait for map style to be loaded before adding routes
+    if (map.current) {
+      if (map.current.isStyleLoaded()) {
+        setRoutes(routesData);
+        routesData.forEach((route, index) => {
+          console.log(`Adding route ${index}:`, route);
+          addRouteToMap(route, index);
+        });
+      } else {
+        map.current.once('style.load', () => {
+          setRoutes(routesData);
+          routesData.forEach((route, index) => {
+            console.log(`Adding route ${index}:`, route);
+            addRouteToMap(route, index);
+          });
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error in fetchRoutes:', error);
+  }
+};
+
+ // Add a polling mechanism to check for updates (optional)
+useEffect(() => {
+  const pollInterval = setInterval(fetchRoutes, 600000); // Poll every 60 seconds
+
+  return () => clearInterval(pollInterval);
+}, []);
+
+const transformRouteData = (routeData) => ({
+  ...routeData,
+  properties: {
+    ...routeData.properties,
+    roadType: routeData.properties.roadType || 'Not Yet Defined',
+    description: routeData.properties.description || '',
+  },
+  id: routeData._id,
+});
+
+ // Update the addRouteToMap function in UserMap.js
  const addRouteToMap = (route, index) => {
-  if (!map.current || !route?.geometry?.coordinates) return;
+  console.log(`Adding route ${index} to map:`, route); // Debug log
+
+  if (!map.current || !route?.geometry?.coordinates) {
+    console.log('Map or coordinates not available:', {
+      mapExists: !!map.current,
+      coordinates: route?.geometry?.coordinates
+    });
+    return;
+  }
 
   const sourceId = `route-${index}`;
   const layerId = `${sourceId}-layer`;
   const outlineLayerId = `${sourceId}-outline`;
 
-  if (map.current.getLayer(outlineLayerId)) map.current.removeLayer(outlineLayerId);
-  if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
-  if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
+  try {
+    // Remove existing layers if they exist
+    if (map.current.getLayer(outlineLayerId)) map.current.removeLayer(outlineLayerId);
+    if (map.current.getLayer(layerId)) map.current.removeLayer(layerId);
+    if (map.current.getSource(sourceId)) map.current.removeSource(sourceId);
 
-  map.current.addSource(sourceId, {
-    type: 'geojson',
-    data: route
-  });
+    // Add source
+    map.current.addSource(sourceId, {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        geometry: route.geometry,
+        properties: route.properties
+      }
+    });
 
-  const isSelected = selectedRoutes.some(r => r.id === route.id);
+    console.log(`Added source ${sourceId}`); // Debug log
 
-  map.current.addLayer({
-    id: outlineLayerId,
-    type: 'line',
-    source: sourceId,
-    layout: {
-      'line-join': 'round',
-      'line-cap': 'round',
-      visibility: 'visible'
-    },
-    paint: {
-      'line-color': '#000000',
-      'line-width': isSelected ? 6 : 5,
-      'line-opacity': 0.5
-    }
-  });
+    const isSelected = selectedRoutes.some(r => r.id === route.id);
 
-  map.current.addLayer({
-    id: layerId,
-    type: 'line',
-    source: sourceId,
-    layout: {
-      'line-join': 'round',
-      'line-cap': 'round',
-      visibility: 'visible'
-    },
-    paint: {
-      'line-color': ROUTE_COLORS[route.properties.roadType] || ROUTE_COLORS['Not Yet Defined'],
-      'line-width': isSelected ? 4 : 3,
-      'line-opacity': isSelected ? 1 : 0.8
-    }
-  });
+    // Add outline layer
+    map.current.addLayer({
+      id: outlineLayerId,
+      type: 'line',
+      source: sourceId,
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+        visibility: 'visible'
+      },
+      paint: {
+        'line-color': '#000000',
+        'line-width': isSelected ? 6 : 5,
+        'line-opacity': 0.5
+      }
+    });
+
+    // Add main route layer
+    map.current.addLayer({
+      id: layerId,
+      type: 'line',
+      source: sourceId,
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+        visibility: 'visible'
+      },
+      paint: {
+        'line-color': ROUTE_COLORS[route.properties.roadType] || ROUTE_COLORS['Not Yet Defined'],
+        'line-width': isSelected ? 4 : 3,
+        'line-opacity': isSelected ? 1 : 0.8
+      }
+    });
+
+    console.log(`Added layers for route ${index}`); // Debug log
+  } catch (error) {
+    console.error(`Error adding route ${index} to map:`, error);
+  }
 };
 
  const addPopup = (route, coordinates) => {

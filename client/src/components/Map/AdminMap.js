@@ -231,12 +231,23 @@ const addCustomControls = (map) => {
 
   // Map Style Change Handler
   const handleChangeMapStyle = (style) => {
-    if (map.current) {
-      map.current.setStyle(MAP_STYLES[style]);
-      setCurrentStyle(style);
-      setIsStyleMenuOpen(false);
-    }
-  };
+
+    const currentRoutes = [...routes]; // Store current routes
+  
+  map.current.once('style.load', () => {
+    // Re-add all routes after style is loaded
+    setTimeout(() => {
+      currentRoutes.forEach((route, index) => {
+        addRouteToMap(route, index);
+      });
+    }, 100);
+  });
+
+  map.current.setStyle(MAP_STYLES[style]);
+  setCurrentStyle(style);
+  setIsStyleMenuOpen(false);
+};
+
 
   // Map Initialization
   useEffect(() => {
@@ -594,7 +605,8 @@ const buttonFunctions = {
           roadType: selectedRoute.properties.roadType || "Not yet defined",
           difficulty: selectedRoute.properties.difficulty || "Unknown",
           time: selectedRoute.properties.time,
-          stats: selectedRoute.properties.stats
+          stats: selectedRoute.properties.stats,
+          lastUpdated: new Date().toISOString()
         },
         geometry: selectedRoute.geometry,
         waypoints: selectedRoute.geometry.coordinates.map(coord => ({
@@ -615,6 +627,12 @@ const buttonFunctions = {
   
         // Update routes list with saved route
         await fetchRoutes();
+
+        const routeIndex = routes.findIndex(r => r._id === response.data._id);
+      if (routeIndex !== -1) {
+        const updatedRoute = transformRouteData(response.data);
+        addRouteToMap(updatedRoute, routeIndex);
+      }
       } else {
         throw new Error(response.message || 'Failed to save route');
       }
